@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  postgres:
+    container_name: "adp_adapter_goodjob_postgres"
+    image: postgres:15.2-alpine
+    ports:
+      - 5432:5432
+    environment:
+      PGDATA: /tmp
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - .local/init/postgres:/docker-entrypoint-initdb.d
+      - .local/data/postgres:/var/lib/postgresql/data/

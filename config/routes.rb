@@ -5,8 +5,8 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # GoodJob Dashboard
-  mount GoodJob::Engine => "good_job"
+  # Que Web UI
+  mount Que::View::Engine => "/que_view"
 
   # Defines the root path route ("/")
   # root "posts#index"

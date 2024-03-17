@@ -25,14 +25,6 @@ module AdpAdapterGoodjob
     # config.eager_load_paths << Rails.root.join("extras")
 
     # ActiveJob adapter
-    config.active_job.queue_adapter = :good_job
-    config.good_job = {
-      # max_threads: 10,
-      # max_threads: 20,
-      queues: "default"
-      # queues: 2.times.map { "queue_#{_1}" }.join(",") # 2 worker
-      # queues: 4.times.map { "queue_#{_1}" }.join(",") # 4 worker
-      # queues: 8.times.map { "queue_#{_1}" }.join(",") # 4 worker
-    }
+    config.active_job.queue_adapter = :que
   end
 end

@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+
+puts RUBY_DESCRIPTION
+
+# load rails app
+APP_PATH = File.expand_path("../config/application", __dir__)
+require_relative "../config/boot"
+require APP_PATH # require application.rb
+require "que/active_record/model"
+
+Rails.application.require_environment!
+
+puts "Rails app loaded!"
+
+Que::ActiveRecord::Model.delete_all
+
+puts "All jobs deleted!"
+
+

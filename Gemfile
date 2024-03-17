@@ -44,9 +44,6 @@ gem "bootsnap", require: false
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
 
-# GoodJob is a multithreaded, Postgres-based, ActiveJob backend for Ruby on Rails.
-gem "good_job", "~> 3.26"
-
 # A Ruby static code analyzer and formatter, based on the community Ruby style guide.
 gem "standardrb", "~> 1.0"
 
@@ -71,4 +68,9 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 end
+
+# Que is a high-performance alternative to DelayedJob or QueueClassic that improves the reliability of your application by using Postgres as the backing store.
+gem "que", "~> 2.3"
+
+gem "que-view", "~> 0.3.4"
 

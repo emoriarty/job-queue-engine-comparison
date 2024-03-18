@@ -69,8 +69,4 @@ group :test do
   gem "selenium-webdriver"
 end
 
-# Que is a high-performance alternative to DelayedJob or QueueClassic that improves the reliability of your application by using Postgres as the backing store.
-gem "que", "~> 2.3"
-
-gem "que-view", "~> 0.3.4"
-
+gem "solid_queue", "~> 0.2.2"

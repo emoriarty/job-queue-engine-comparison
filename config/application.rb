@@ -25,6 +25,6 @@ module AdpAdapterGoodjob
     # config.eager_load_paths << Rails.root.join("extras")
 
     # ActiveJob adapter
-    config.active_job.queue_adapter = :que
+    config.active_job.queue_adapter = :solid_queue
   end
 end

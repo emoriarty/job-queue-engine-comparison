@@ -17,7 +17,7 @@ job_count = ARGV[1]&.to_i / queue_count # 10_000, 20_000, 40_000, 80_000
 queue_count.times.map.with_index do |i|
   Thread.new do
     job_count.times do
-      MyJob.set(wait: 2.minute, queue: "queue_#{i}").perform_later
+      MyJob.set(wait_until: 3.minute.from_now, queue: "queue_#{i}").perform_later
     end
   end
 end.each(&:join)

@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+puts RUBY_DESCRIPTION
+
+# load rails app
+APP_PATH = File.expand_path("../config/application", __dir__)
+require_relative "../config/boot"
+require APP_PATH # require application.rb
+
+Rails.application.require_environment!
+
+puts "Rails app loaded!"
+
+queue_count = ARGV[0]&.to_i # 1, 2, 4, 8
+job_count = ARGV[1]&.to_i / queue_count # 10_000, 20_000, 40_000, 80_000
+time = ARGV[2]&.to_i || 2 # 10, 20, 40, 80
+
+queue_count.times.map.with_index do |i|
+  Thread.new do
+    job_count.times do
+      CpuJob.set(wait_until: time.minute.from_now, queue: "queue_#{i}").perform_later
+    end
+  end
+end.each(&:join)
+
+puts "All CPU jobs enqueued!"

@@ -79,6 +79,9 @@ GEM
       public_suffix (>= 2.0.2, < 6.0)
     ast (2.4.2)
     base64 (0.2.0)
+    benchmark-ips (2.13.0)
+    benchmark-memory (0.2.0)
+      memory_profiler (~> 1)
     bigdecimal (3.1.6)
     bindex (0.8.1)
     bootsnap (1.18.3)
@@ -142,6 +145,7 @@ GEM
       net-smtp
     marcel (1.0.3)
     matrix (0.4.2)
+    memory_profiler (1.0.1)
     mini_mime (1.1.5)
     minitest (5.22.2)
     msgpack (1.7.2)
@@ -292,6 +296,8 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  benchmark-ips (~> 2.13)
+  benchmark-memory (~> 0.2.0)
   bootsnap
   capybara
   debug

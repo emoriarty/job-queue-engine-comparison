@@ -1,0 +1,3 @@
+#!/bin/bash
+
+GOOD_JOB_EXECUTION_MODE=external bin/rails server 

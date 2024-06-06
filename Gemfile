@@ -72,3 +72,6 @@ group :test do
   gem "selenium-webdriver"
 end
 
+
+gem "benchmark-ips", "~> 2.13"
+gem "benchmark-memory", "~> 0.2.0"

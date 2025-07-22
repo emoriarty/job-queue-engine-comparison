@@ -7,7 +7,7 @@
 default: &default
   adapter: postgresql
   host: localhost
-  pool: <%= 1 + 2 + (ENV.fetch("RAILS_MAX_THREADS", 5).to_i * ENV.fetch("GOODJOB_QUEUES", 8).to_i) * ENV.fetch("DB_JOB", 1).to_i %>
+  pool: <%= 1 + 2 + 42 + (ENV.fetch("RAILS_MAX_THREADS", 5).to_i * ENV.fetch("QUEUES", 8).to_i) %>
   encoding: unicode
   timeout: 5000
 

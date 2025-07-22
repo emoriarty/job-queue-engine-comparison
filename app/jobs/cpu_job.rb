@@ -25,4 +25,6 @@ class CpuJob < ApplicationJob
     end
     result
   end
+
+  def job_type = "cpu"
 end

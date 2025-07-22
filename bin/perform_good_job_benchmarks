@@ -18,6 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/batch_enqueue.sh"
 . "$SCRIPT_DIR/batch_duration.sh"
 . "$SCRIPT_DIR/batch_resource_report.sh"
+. "$SCRIPT_DIR/batch_resource_avg.sh"
 
 THREADS=5
 
@@ -82,13 +83,14 @@ wait "$CPU_SAMPLER_PID_ONE" "$CPU_SAMPLER_PID_TWO" 2>/dev/null || true
 
 show_batch_duration
 
-peak_mb=$(get_peak_memory_mb "$GOOD_JOB_PID_ONE")
-echo "[PID $GOOD_JOB_PID_ONE] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
-peak_mb=$(get_peak_memory_mb "$GOOD_JOB_PID_TWO")
-echo "[PID $GOOD_JOB_PID_TWO] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
+# peak_mb=$(get_peak_memory_mb "$GOOD_JOB_PID_ONE")
+# echo "[PID $GOOD_JOB_PID_ONE] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
+# peak_mb=$(get_peak_memory_mb "$GOOD_JOB_PID_TWO")
+# echo "[PID $GOOD_JOB_PID_TWO] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
 
-show_monitor_cpu_usage "$GOOD_JOB_PID_ONE"
-show_monitor_cpu_usage "$GOOD_JOB_PID_TWO"
+# show_monitor_cpu_usage "$GOOD_JOB_PID_ONE"
+# show_monitor_cpu_usage "$GOOD_JOB_PID_TWO"
+report_resource_averages "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO"
 
 kill "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" 2>/dev/null || true
 wait "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" 2>/dev/null || true
@@ -133,11 +135,12 @@ wait "$CPU_SAMPLER_PID_ONE" "$CPU_SAMPLER_PID_TWO" "$CPU_SAMPLER_PID_THREE" "$CP
 
 show_batch_duration
 
-for pid in "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" "$GOOD_JOB_PID_THREE" "$GOOD_JOB_PID_FOUR"; do
-  peak_mb=$(get_peak_memory_mb "$pid")
-  echo "[PID $pid] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
-  show_monitor_cpu_usage "$pid"
-done
+#for pid in "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" "$GOOD_JOB_PID_THREE" "$GOOD_JOB_PID_FOUR"; do
+#  peak_mb=$(get_peak_memory_mb "$pid")
+#  echo "[PID $pid] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
+#  show_monitor_cpu_usage "$pid"
+#done
+report_resource_averages "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" "$GOOD_JOB_PID_THREE" "$GOOD_JOB_PID_FOUR"
 
 kill "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" "$GOOD_JOB_PID_THREE" "$GOOD_JOB_PID_FOUR" 2>/dev/null || true
 wait "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" "$GOOD_JOB_PID_THREE" "$GOOD_JOB_PID_FOUR" 2>/dev/null || true
@@ -175,11 +178,12 @@ done
 
 show_batch_duration
 
-for pid in "${GOOD_JOB_PIDS[@]}"; do
-  peak_mb=$(get_peak_memory_mb "$pid")
-  echo "[PID $pid] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
-  show_monitor_cpu_usage "$pid"
-done
+#for pid in "${GOOD_JOB_PIDS[@]}"; do
+#  peak_mb=$(get_peak_memory_mb "$pid")
+#  echo "[PID $pid] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
+#  show_monitor_cpu_usage "$pid"
+#done
+report_resource_averages "${GOOD_JOB_PIDS[@]}"
 
 for pid in "${GOOD_JOB_PIDS[@]}"; do
   kill "$pid" 2>/dev/null || true

@@ -12,7 +12,7 @@ function show_spinner_until_jobs_complete() {
     fi
 
     i=$(( (i+1) % 4 ))
-    printf "\rWaiting for jobs to finish... %s (Pending jobs: %s)" "${spinner:$i:1}" "$count"
+    printf "\rWaiting for jobs to finish... %s (Pending jobs: %s)       " "${spinner:$i:1}" "$count"
     sleep "$delay"
   done
   printf "\rAll jobs completed.                                                  "

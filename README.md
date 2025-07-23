@@ -38,11 +38,6 @@ Technical stack:
 - **PostgreSQL:** 17.5  
 - **Environment:** `RAILS_ENV=production`  
 
-Additional considerations:
-
-- Each thread requires at least one database connection.
-- PostgreSQL is used as the backend for all runners.
-
 ---
 
 ## Notes

@@ -1,24 +1,14 @@
-# README
+# SolidQueue Benchmarks
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+Run the following Bash script from the terminal, starting at the project root:
 
-Things you may want to cover:
+## CPU
+```bash
+for count in 16000 8000 4000 2000 1000; do ./bin/perform_benchmarks "cpu" "$count"; done
+```
 
-* Ruby version
+## IO
+```bash
+for count in 16000 8000 4000 2000 1000; do ./bin/perform_benchmarks "io" "$count"; done
+```
 
-* System dependencies
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...

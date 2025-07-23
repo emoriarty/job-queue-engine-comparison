@@ -4,14 +4,15 @@ function find_worker_pids_by_parent() {
   local retries=${3:-10}
   local delay=${4:-0.5}
 
-  local pids=""
   for ((i = 1; i <= retries; i++)); do
-    # Grab all matching child PIDs as space-separated string
-    pids="$(pgrep -f "$match_pattern" -P "$parent_pid" || true)"
-    if [[ -n "$pids" ]]; then
-      echo "$pids"
+    # Use mapfile to read all matching PIDs into array
+    mapfile -t pids < <(pgrep -f "$match_pattern" -P "$parent_pid" 2>/dev/null || true)
+
+    if (( ${#pids[@]} > 0 )); then
+      echo "${pids[@]}"
       return 0
     fi
+
     sleep "$delay"
   done
 

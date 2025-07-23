@@ -31,9 +31,9 @@ echo "==========================================="
 echo "Batch with 1 process + 8 queues + 5 threads"
 echo "==========================================="
 
-QUEUES="queue_0:$THREADS;queue_1:$THREADS;queue_2:$THREADS;queue_3:$THREADS;queue_4:$THREADS;queue_5:$THREADS;queue_6:$THREADS;queue_7:$THREADS"
-
-GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
+GOOD_JOB_EXECUTION_MODE=external \
+  GOOD_JOB_MAX_THREADS=5 \
+  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
 GOOD_JOB_PID=$!
 
 monitor_cpu_usage_dynamic "$GOOD_JOB_PID" &
@@ -65,9 +65,13 @@ echo "============================================="
 QUEUES_ONE="queue_0:$THREADS;queue_1:$THREADS;queue_2:$THREADS;queue_3:$THREADS"
 QUEUES_TWO="queue_4:$THREADS;queue_5:$THREADS;queue_6:$THREADS;queue_7:$THREADS"
 
-GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_ONE" > /dev/null 2>&1 &
+GOOD_JOB_EXECUTION_MODE=external \
+  GOOD_JOB_MAX_THREADS=5 \
+  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
 GOOD_JOB_PID_ONE=$!
-GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_TWO" > /dev/null 2>&1 &
+GOOD_JOB_EXECUTION_MODE=external \
+  GOOD_JOB_MAX_THREADS=5 \
+  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
 GOOD_JOB_PID_TWO=$!
 
 monitor_cpu_usage_dynamic "$GOOD_JOB_PID_ONE" &
@@ -104,18 +108,21 @@ echo "============================================="
 echo "Batch with 4 processes + 2 queues + 5 threads"
 echo "============================================="
 
-QUEUES_ONE="queue_0:$THREADS;queue_1:$THREADS"
-QUEUES_TWO="queue_2:$THREADS;queue_3:$THREADS"
-QUEUES_THREE="queue_4:$THREADS;queue_5:$THREADS"
-QUEUES_FOUR="queue_6:$THREADS;queue_7:$THREADS"
-
-GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_ONE" > /dev/null 2>&1 &
+GOOD_JOB_EXECUTION_MODE=external \
+  GOOD_JOB_MAX_THREADS=5 \
+  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
 GOOD_JOB_PID_ONE=$!
-GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_TWO" > /dev/null 2>&1 &
+GOOD_JOB_EXECUTION_MODE=external \
+  GOOD_JOB_MAX_THREADS=5 \
+  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
 GOOD_JOB_PID_TWO=$!
-GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_THREE" > /dev/null 2>&1 &
+GOOD_JOB_EXECUTION_MODE=external \
+  GOOD_JOB_MAX_THREADS=5 \
+  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
 GOOD_JOB_PID_THREE=$!
-GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_FOUR" > /dev/null 2>&1 &
+GOOD_JOB_EXECUTION_MODE=external \
+  GOOD_JOB_MAX_THREADS=5 \
+  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
 GOOD_JOB_PID_FOUR=$!
 
 monitor_cpu_usage_dynamic "$GOOD_JOB_PID_ONE" &
@@ -159,7 +166,9 @@ for i in {0..7}; do
 done
 
 for i in {0..7}; do
-  GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="${queues[$i]}" > /dev/null 2>&1 &
+  GOOD_JOB_EXECUTION_MODE=external \
+    GOOD_JOB_MAX_THREADS=5 \
+    bundle exec good_job start --queues="*" > /dev/null 2>&1 &
   GOOD_JOB_PIDS[$i]=$!
 done
 

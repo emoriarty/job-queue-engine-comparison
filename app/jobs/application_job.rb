@@ -6,7 +6,7 @@ class ApplicationJob < ActiveJob::Base
   # discard_on ActiveJob::DeserializationError
 
   around_perform do |_job, block|
-    record = JobBenchmark.create!(engine_type: "good_job", job_type:, started_at: Time.now)
+    record = JobBenchmark.create!(job_type:, started_at: Time.now)
     block.call
     finished_at = Time.now
     record.update!(finished_at:, duration: finished_at - record.started_at)

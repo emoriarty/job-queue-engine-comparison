@@ -19,7 +19,7 @@ function show_spinner_enqueue_jobs() {
     klass = Object.const_get("$class_name")
     queue_count.times do |i|
       job_count.times do
-        klass.set(queue: "queue_#{i}").perform_later
+        klass.set(wait: 1.second, queue: "queue_#{i}").perform_later
       end
     end
 RUBY

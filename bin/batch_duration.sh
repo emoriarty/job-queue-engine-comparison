@@ -2,8 +2,8 @@ function show_batch_duration() {
   local SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 "$SCRIPT_DIR/../bin/rails" runner "$(cat <<'RUBY'
-  first_job = JobBenchmark.good_job.order(finished_at: :asc).select(:finished_at).first
-  last_job = JobBenchmark.good_job.order(finished_at: :asc).select(:finished_at).last
+  first_job = JobBenchmark.order(finished_at: :asc).select(:finished_at).first
+  last_job = JobBenchmark.order(finished_at: :asc).select(:finished_at).last
 
   if first_job && last_job
     total_seconds = (last_job.finished_at - first_job.finished_at).to_i

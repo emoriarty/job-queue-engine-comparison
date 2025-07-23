@@ -5,7 +5,7 @@ function show_spinner_until_jobs_complete() {
 
   tput civis  # Hide cursor
   while true; do
-    local count=$(bin/rails runner "puts GoodJob::Job.where(finished_at: nil).count" 2>/dev/null)
+    local count=$(bin/rails runner "puts JobBenchmark.where(finished_at: nil).count" 2>/dev/null)
 
     if [[ "$count" == "0" ]]; then
       break

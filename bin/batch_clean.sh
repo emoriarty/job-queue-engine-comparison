@@ -5,7 +5,7 @@ function show_spinner_clean_batch() {
   local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
   tput civis 2>/dev/null
-  "$script_dir/../bin/rails" runner "GoodJob::Job.delete_all; JobBenchmark.delete_all" > /dev/null 2>&1 &
+  "$script_dir/../bin/rails" runner "JobBenchmark.delete_all" > /dev/null 2>&1 &
   CLEAN_PID=$!
   while kill -0 "$CLEAN_PID" 2>/dev/null; do
     i=$(( (i+1) % 4 ))
@@ -24,7 +24,7 @@ function show_spinner_clean_batch() {
   local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
   tput civis 2>/dev/null
-  "$script_dir/../bin/rails" runner "GoodJob::Job.delete_all; JobBenchmark.delete_all" > /dev/null 2>&1 &
+  "$script_dir/../bin/rails" runner "JobBenchmark.delete_all" > /dev/null 2>&1 &
   local CLEAN_PID=$!
 
   while kill -0 "$CLEAN_PID" 2>/dev/null; do

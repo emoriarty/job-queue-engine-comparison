@@ -6,9 +6,10 @@ JOB_TYPE=$1  # Type of bench: io | cpu
 JOBS_COUNT=$2
 
 echo
-echo "BENCHMARKS FOR JOB TYPE: $JOB_TYPE"
-echo "ACTUAL LOAD: $JOBS_COUNT jobs"
-echo
+echo "**********************************"
+echo "* BENCHMARKS FOR JOB TYPE: $JOB_TYPE"
+echo "* ACTUAL LOAD: $JOBS_COUNT jobs"
+echo "**********************************"
 
 # Use the script's directory to source the other scripts
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

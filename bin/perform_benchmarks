@@ -4,12 +4,13 @@ set -euo pipefail
 
 JOB_TYPE=$1  # Type of bench: io | cpu
 JOBS_COUNT=$2
+QUEUES_COUNT=8
 
 echo
-echo "**************************************"
-echo "* BENCHMARKS FOR JOB TYPE: $JOB_TYPE *"
-echo "* ACTUAL LOAD: $JOBS_COUNT jobs      *"
-echo "**************************************"
+echo "*************************************"
+echo "* BENCHMARKS FOR JOB TYPE: $JOB_TYPE "
+echo "* ACTUAL LOAD: $JOBS_COUNT jobs      "
+echo "*************************************"
 
 # Use the script's directory to source the other scripts
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,172 +20,65 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/batch_enqueue.sh"
 . "$SCRIPT_DIR/batch_duration.sh"
 . "$SCRIPT_DIR/batch_resource_report.sh"
-. "$SCRIPT_DIR/batch_resource_avg.sh"
+. "$SCRIPT_DIR/batch_workers_finder.sh"
 
-# ==========================================
-# Batch with 1 process + 8 queues + 5 threads
-# ==========================================
 echo
 echo "==========================================="
 echo "Batch with 1 process + 8 queues + 5 threads"
 echo "==========================================="
 
-JOB_CONCURRENCY=1
-./bin/jobs > /dev/null 2>&1 &
+
+JOB_CONCURRENCY=1 ./bin/jobs > /dev/null 2>&1 &
 JOB_PID=$!
 
-monitor_cpu_usage_dynamic "$JOB_PID" &
-CPU_SAMPLER_PID=$!
+read -a WORKER_JOB_PIDS <<< "$(find_worker_pids_by_parent "$JOB_PID")"
+echo "WORKERS PIDS: ${WORKER_JOB_PIDS[@]}"
+
+declare -a CPU_SAMPLER_PIDS
+monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${WORKER_JOB_PIDS[@]}"
+echo "SAMPLER PIDS: ${CPU_SAMPLER_PIDS[@]}"
 
 show_spinner_clean_batch
-show_spinner_enqueue_jobs "$JOB_TYPE" 8 "$JOBS_COUNT"
-show_spinner_until_jobs_complete
+show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
+show_spinner_until_jobs_complete "$JOBS_COUNT"
 
-kill "$CPU_SAMPLER_PID" 2>/dev/null || true
-wait "$CPU_SAMPLER_PID" 2>/dev/null || true
+kill "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
+wait "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
 
 show_batch_duration
-#peak_mb=$(get_peak_memory_mb "$JOB_PID")
-#echo "[PID $JOB_PID] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
-#show_monitor_cpu_usage "$JOB_PID"
+show_avg_peak_memory_mb "${WORKER_JOB_PIDS[@]}"
+show_avg_monitor_cpu_usage "${WORKER_JOB_PIDS[@]}"
 
 kill "$JOB_PID" 2>/dev/null || true
 wait "$JOB_PID" 2>/dev/null || true
 
-# # ==============================================
-# # Batch with 2 processes + 4 queues + 5 threads
-# # ==============================================
-# echo
-# echo "============================================="
-# echo "Batch with 2 processes + 4 queues + 5 threads"
-# echo "============================================="
-#
-# QUEUES_ONE="queue_0:$THREADS;queue_1:$THREADS;queue_2:$THREADS;queue_3:$THREADS"
-# QUEUES_TWO="queue_4:$THREADS;queue_5:$THREADS;queue_6:$THREADS;queue_7:$THREADS"
-#
-# GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_ONE" > /dev/null 2>&1 &
-# GOOD_JOB_PID_ONE=$!
-# GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_TWO" > /dev/null 2>&1 &
-# GOOD_JOB_PID_TWO=$!
-#
-# monitor_cpu_usage_dynamic "$GOOD_JOB_PID_ONE" &
-# CPU_SAMPLER_PID_ONE=$!
-# monitor_cpu_usage_dynamic "$GOOD_JOB_PID_TWO" &
-# CPU_SAMPLER_PID_TWO=$!
-#
-# show_spinner_clean_batch
-# show_spinner_enqueue_jobs "$JOB_TYPE" 8 "$JOBS_COUNT"
-# show_spinner_until_jobs_complete
-#
-# kill "$CPU_SAMPLER_PID_ONE" "$CPU_SAMPLER_PID_TWO" 2>/dev/null || true
-# wait "$CPU_SAMPLER_PID_ONE" "$CPU_SAMPLER_PID_TWO" 2>/dev/null || true
-#
-# show_batch_duration
-#
-# # peak_mb=$(get_peak_memory_mb "$GOOD_JOB_PID_ONE")
-# # echo "[PID $GOOD_JOB_PID_ONE] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
-# # peak_mb=$(get_peak_memory_mb "$GOOD_JOB_PID_TWO")
-# # echo "[PID $GOOD_JOB_PID_TWO] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
-#
-# # show_monitor_cpu_usage "$GOOD_JOB_PID_ONE"
-# # show_monitor_cpu_usage "$GOOD_JOB_PID_TWO"
-# report_resource_averages "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO"
-#
-# kill "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" 2>/dev/null || true
-# wait "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" 2>/dev/null || true
-#
-# # ==============================================
-# # Batch with 4 processes + 2 queues + 5 threads
-# # ==============================================
-# echo
-# echo "============================================="
-# echo "Batch with 4 processes + 2 queues + 5 threads"
-# echo "============================================="
-#
-# QUEUES_ONE="queue_0:$THREADS;queue_1:$THREADS"
-# QUEUES_TWO="queue_2:$THREADS;queue_3:$THREADS"
-# QUEUES_THREE="queue_4:$THREADS;queue_5:$THREADS"
-# QUEUES_FOUR="queue_6:$THREADS;queue_7:$THREADS"
-#
-# GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_ONE" > /dev/null 2>&1 &
-# GOOD_JOB_PID_ONE=$!
-# GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_TWO" > /dev/null 2>&1 &
-# GOOD_JOB_PID_TWO=$!
-# GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_THREE" > /dev/null 2>&1 &
-# GOOD_JOB_PID_THREE=$!
-# GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES_FOUR" > /dev/null 2>&1 &
-# GOOD_JOB_PID_FOUR=$!
-#
-# monitor_cpu_usage_dynamic "$GOOD_JOB_PID_ONE" &
-# CPU_SAMPLER_PID_ONE=$!
-# monitor_cpu_usage_dynamic "$GOOD_JOB_PID_TWO" &
-# CPU_SAMPLER_PID_TWO=$!
-# monitor_cpu_usage_dynamic "$GOOD_JOB_PID_THREE" &
-# CPU_SAMPLER_PID_THREE=$!
-# monitor_cpu_usage_dynamic "$GOOD_JOB_PID_FOUR" &
-# CPU_SAMPLER_PID_FOUR=$!
-#
-# show_spinner_clean_batch
-# show_spinner_enqueue_jobs "$JOB_TYPE" 8 "$JOBS_COUNT"
-# show_spinner_until_jobs_complete
-#
-# kill "$CPU_SAMPLER_PID_ONE" "$CPU_SAMPLER_PID_TWO" "$CPU_SAMPLER_PID_THREE" "$CPU_SAMPLER_PID_FOUR" 2>/dev/null || true
-# wait "$CPU_SAMPLER_PID_ONE" "$CPU_SAMPLER_PID_TWO" "$CPU_SAMPLER_PID_THREE" "$CPU_SAMPLER_PID_FOUR" 2>/dev/null || true
-#
-# show_batch_duration
-#
-# #for pid in "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" "$GOOD_JOB_PID_THREE" "$GOOD_JOB_PID_FOUR"; do
-# #  peak_mb=$(get_peak_memory_mb "$pid")
-# #  echo "[PID $pid] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
-# #  show_monitor_cpu_usage "$pid"
-# #done
-# report_resource_averages "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" "$GOOD_JOB_PID_THREE" "$GOOD_JOB_PID_FOUR"
-#
-# kill "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" "$GOOD_JOB_PID_THREE" "$GOOD_JOB_PID_FOUR" 2>/dev/null || true
-# wait "$GOOD_JOB_PID_ONE" "$GOOD_JOB_PID_TWO" "$GOOD_JOB_PID_THREE" "$GOOD_JOB_PID_FOUR" 2>/dev/null || true
-#
-# # =================================================
-# # Batch with 8 processes + 1 queue each + 5 threads
-# # =================================================
-# echo
-# echo "================================================="
-# echo "Batch with 8 processes + 1 queue each + 5 threads"
-# echo "================================================="
-#
-# for i in {0..7}; do
-#   queues[$i]="queue_${i}:$THREADS"
-# done
-#
-# for i in {0..7}; do
-#   GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="${queues[$i]}" > /dev/null 2>&1 &
-#   GOOD_JOB_PIDS[$i]=$!
-# done
-#
-# for i in {0..7}; do
-#   monitor_cpu_usage_dynamic "${GOOD_JOB_PIDS[$i]}" &
-#   CPU_SAMPLER_PIDS[$i]=$!
-# done
-#
-# show_spinner_clean_batch
-# show_spinner_enqueue_jobs "$JOB_TYPE" 8 "$JOBS_COUNT"
-# show_spinner_until_jobs_complete
-#
-# for pid in "${CPU_SAMPLER_PIDS[@]}"; do
-#   kill "$pid" 2>/dev/null || true
-#   wait "$pid" 2>/dev/null || true
-# done
-#
-# show_batch_duration
-#
-# #for pid in "${GOOD_JOB_PIDS[@]}"; do
-# #  peak_mb=$(get_peak_memory_mb "$pid")
-# #  echo "[PID $pid] GoodJob peak memory usage: ${peak_mb:-N/A} MB"
-# #  show_monitor_cpu_usage "$pid"
-# #done
-# report_resource_averages "${GOOD_JOB_PIDS[@]}"
-#
-# for pid in "${GOOD_JOB_PIDS[@]}"; do
-#   kill "$pid" 2>/dev/null || true
-#   wait "$pid" 2>/dev/null || true
-# done
-#
+echo
+echo "==========================================="
+echo "Batch with 2 process + 8 queues + 5 threads"
+echo "==========================================="
+
+
+JOB_CONCURRENCY=2 ./bin/jobs > /dev/null 2>&1 &
+JOB_PID=$!
+
+read -a WORKER_JOB_PIDS <<< "$(find_worker_pids_by_parent "$JOB_PID")"
+echo "WORKERS PIDS: ${WORKER_JOB_PIDS[@]}"
+
+declare -a CPU_SAMPLER_PIDS
+monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${WORKER_JOB_PIDS[@]}"
+echo "SAMPLER PIDS: ${CPU_SAMPLER_PIDS[@]}"
+
+show_spinner_clean_batch
+show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
+show_spinner_until_jobs_complete "$JOBS_COUNT"
+
+kill "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
+wait "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
+
+show_batch_duration
+show_avg_peak_memory_mb "${WORKER_JOB_PIDS[@]}"
+show_avg_monitor_cpu_usage "${WORKER_JOB_PIDS[@]}"
+
+kill "$JOB_PID" 2>/dev/null || true
+wait "$JOB_PID" 2>/dev/null || true
+

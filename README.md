@@ -29,7 +29,7 @@ All tests were executed on the following system:
 
 **Technical stack:**
 
-- **Ruby:** 3.2  
+- **Ruby:** 3.2 (MRI/CRuby) 
 - **Rails:** 7.1  
 - **PostgreSQL:** 17.5  
 - **Environment:** `RAILS_ENV=production`  

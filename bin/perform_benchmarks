@@ -22,6 +22,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/batch_resource_avg.sh"
 
 THREADS=5
+QUEUES_COUNT=8
+QUEUES="queue_0;queue_1;queue_2;queue_3;queue_4;queue_5;queue_6;queue_7"
 
 # ==========================================
 # Batch with 1 process + 8 queues + 5 threads
@@ -33,14 +35,14 @@ echo "==========================================="
 
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
-  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
+  bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID=$!
 
 monitor_cpu_usage_dynamic "$GOOD_JOB_PID" &
 CPU_SAMPLER_PID=$!
 
 show_spinner_clean_batch
-show_spinner_enqueue_jobs "$JOB_TYPE" 8 "$JOBS_COUNT"
+show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
 show_spinner_until_jobs_complete
 
 kill "$CPU_SAMPLER_PID" 2>/dev/null || true
@@ -62,16 +64,13 @@ echo "============================================="
 echo "Batch with 2 processes + 4 queues + 5 threads"
 echo "============================================="
 
-QUEUES_ONE="queue_0:$THREADS;queue_1:$THREADS;queue_2:$THREADS;queue_3:$THREADS"
-QUEUES_TWO="queue_4:$THREADS;queue_5:$THREADS;queue_6:$THREADS;queue_7:$THREADS"
-
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
-  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
+  bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_ONE=$!
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
-  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
+  bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_TWO=$!
 
 monitor_cpu_usage_dynamic "$GOOD_JOB_PID_ONE" &
@@ -80,7 +79,7 @@ monitor_cpu_usage_dynamic "$GOOD_JOB_PID_TWO" &
 CPU_SAMPLER_PID_TWO=$!
 
 show_spinner_clean_batch
-show_spinner_enqueue_jobs "$JOB_TYPE" 8 "$JOBS_COUNT"
+show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT"  "$JOBS_COUNT"
 show_spinner_until_jobs_complete
 
 kill "$CPU_SAMPLER_PID_ONE" "$CPU_SAMPLER_PID_TWO" 2>/dev/null || true
@@ -110,19 +109,19 @@ echo "============================================="
 
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
-  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
+  bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_ONE=$!
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
-  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
+  bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_TWO=$!
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
-  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
+  bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_THREE=$!
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
-  bundle exec good_job start --queues="*" > /dev/null 2>&1 &
+  bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_FOUR=$!
 
 monitor_cpu_usage_dynamic "$GOOD_JOB_PID_ONE" &
@@ -135,7 +134,7 @@ monitor_cpu_usage_dynamic "$GOOD_JOB_PID_FOUR" &
 CPU_SAMPLER_PID_FOUR=$!
 
 show_spinner_clean_batch
-show_spinner_enqueue_jobs "$JOB_TYPE" 8 "$JOBS_COUNT"
+show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
 show_spinner_until_jobs_complete
 
 kill "$CPU_SAMPLER_PID_ONE" "$CPU_SAMPLER_PID_TWO" "$CPU_SAMPLER_PID_THREE" "$CPU_SAMPLER_PID_FOUR" 2>/dev/null || true
@@ -162,13 +161,7 @@ echo "Batch with 8 processes + 1 queue each + 5 threads"
 echo "================================================="
 
 for i in {0..7}; do
-  queues[$i]="queue_${i}:$THREADS"
-done
-
-for i in {0..7}; do
-  GOOD_JOB_EXECUTION_MODE=external \
-    GOOD_JOB_MAX_THREADS=5 \
-    bundle exec good_job start --queues="*" > /dev/null 2>&1 &
+  GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
   GOOD_JOB_PIDS[$i]=$!
 done
 
@@ -178,7 +171,7 @@ for i in {0..7}; do
 done
 
 show_spinner_clean_batch
-show_spinner_enqueue_jobs "$JOB_TYPE" 8 "$JOBS_COUNT"
+show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
 show_spinner_until_jobs_complete
 
 for pid in "${CPU_SAMPLER_PIDS[@]}"; do

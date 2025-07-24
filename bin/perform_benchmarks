@@ -19,7 +19,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/batch_enqueue.sh"
 . "$SCRIPT_DIR/batch_duration.sh"
 . "$SCRIPT_DIR/batch_resource_report.sh"
-. "$SCRIPT_DIR/batch_resource_avg.sh"
 
 THREADS=5
 QUEUES_COUNT=8

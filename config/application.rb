@@ -26,5 +26,7 @@ module AdpAdapterGoodjob
 
     # ActiveJob adapter
     config.active_job.queue_adapter = :que
+
+    config.active_record.schema_format = :sql
   end
 end

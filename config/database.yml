@@ -7,7 +7,7 @@ default: &default
 development:
   <<: *default
   host: 'localhost'
-  database: adp_adapter_good_job_development
+  database: que_benchmark_development
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
@@ -15,8 +15,12 @@ development:
 test:
   <<: *default
   host: 'localhost'
-  database: adp_adapter_good_job_test
+  database: que_benchmark_test
 
 production:
-  <<: *default
-  database: adp_adapter_good_job
+  primary:
+    <<: *default
+    database: que_benchmark
+  queue:
+    <<: *default
+    database: que_queue

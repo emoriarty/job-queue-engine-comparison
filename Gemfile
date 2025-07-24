@@ -70,7 +70,7 @@ group :test do
 end
 
 # Que is a high-performance alternative to DelayedJob or QueueClassic that improves the reliability of your application by using Postgres as the backing store.
-gem "que", "~> 2.3"
+gem "que"
 
-gem "que-view", "~> 0.3.4"
+gem "que-view"
 

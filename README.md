@@ -38,6 +38,8 @@ Technical stack:
 - **PostgreSQL:** 17.5  
 - **Environment:** `RAILS_ENV=production`  
 
+Other considerations:
+- To ensure the most consistent setup across job runners, separate databases have been used for GoodJob and Que, matching SolidQueue’s default behavior of isolating its queue backend. While this may not be a critical factor—since all runners ultimately rely on the same RDBMS—it could slightly affect performance due to differences in caching and database connections.
 ---
 
 ## Notes

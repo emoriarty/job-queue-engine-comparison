@@ -7,7 +7,7 @@ default: &default
 development:
   <<: *default
   host: 'localhost'
-  database: app_solid_queue_development
+  database: app_sidekiq_development
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
@@ -15,13 +15,8 @@ development:
 test:
   <<: *default
   host: 'localhost'
-  database: app_solid_queue_test
+  database: app_sidekiq_test
 
 production:
-  primary:
-    <<: *default
-    database: app_solid_queue
-  queue:
-    <<: *default
-    database: app_solid_queue_queue
-    migrations_paths: db/queue_migrate
+  <<: *default
+  database: app_sidekiq

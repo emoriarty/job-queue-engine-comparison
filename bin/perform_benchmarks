@@ -5,6 +5,7 @@ set -euo pipefail
 JOB_TYPE=$1  # Type of bench: io | cpu
 JOBS_COUNT=$2
 QUEUES_COUNT=8
+THREADS=5
 
 echo
 echo "*************************************"
@@ -20,7 +21,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/batch_enqueue.sh"
 . "$SCRIPT_DIR/batch_duration.sh"
 . "$SCRIPT_DIR/batch_resource_report.sh"
-. "$SCRIPT_DIR/batch_workers_finder.sh"
 
 #####################################################################
 
@@ -29,15 +29,12 @@ echo "==========================================="
 echo "Batch with 1 process + 8 queues + 5 threads"
 echo "==========================================="
 
-JOB_CONCURRENCY=1 ./bin/jobs > /dev/null 2>&1 &
-JOB_PID=$!
-
-read -a WORKER_JOB_PIDS <<< "$(find_worker_pids_by_parent "$JOB_PID")"
-# echo "WORKERS PIDS: ${WORKER_JOB_PIDS[@]}"
+bundle exec sidekiq --concurrency "$THREADS" \
+  -q queue_0 -q queue_1 -q queue_2 -q queue_3 -q queue_4 -q queue_5 -q queue_6 -q queue_7 > /dev/null 2>&1 &
+JOB_PIDS[0]=$!
 
 declare -a CPU_SAMPLER_PIDS
-monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${WORKER_JOB_PIDS[@]}"
-# echo "SAMPLER PIDS: ${CPU_SAMPLER_PIDS[@]}"
+monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${JOB_PIDS[@]}"
 
 show_spinner_clean_batch
 show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
@@ -47,11 +44,11 @@ kill "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
 wait "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
 
 show_batch_duration
-show_avg_peak_memory_mb "${WORKER_JOB_PIDS[@]}"
-show_avg_monitor_cpu_usage "${WORKER_JOB_PIDS[@]}"
+show_avg_peak_memory_mb "${JOB_PIDS[@]}"
+show_avg_monitor_cpu_usage "${JOB_PIDS[@]}"
 
-kill "$JOB_PID" 2>/dev/null || true
-wait "$JOB_PID" 2>/dev/null || true
+kill "${JOB_PIDS[@]}" 2>/dev/null || true
+wait "${JOB_PIDS[@]}" 2>/dev/null || true
 
 #####################################################################
 
@@ -60,15 +57,14 @@ echo "==========================================="
 echo "Batch with 2 process + 8 queues + 5 threads"
 echo "==========================================="
 
-JOB_CONCURRENCY=2 ./bin/jobs > /dev/null 2>&1 &
-JOB_PID=$!
-
-read -a WORKER_JOB_PIDS <<< "$(find_worker_pids_by_parent "$JOB_PID")"
-# echo "WORKERS PIDS: ${WORKER_JOB_PIDS[@]}"
+for i in {0..1}; do
+  bundle exec sidekiq --concurrency "$THREADS" \
+    -q queue_0 -q queue_1 -q queue_2 -q queue_3 -q queue_4 -q queue_5 -q queue_6 -q queue_7 > /dev/null 2>&1 &
+  JOB_PIDS[i]=$!
+done
 
 declare -a CPU_SAMPLER_PIDS
-monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${WORKER_JOB_PIDS[@]}"
-# echo "SAMPLER PIDS: ${CPU_SAMPLER_PIDS[@]}"
+monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${JOB_PIDS[@]}"
 
 show_spinner_clean_batch
 show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
@@ -78,11 +74,11 @@ kill "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
 wait "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
 
 show_batch_duration
-show_avg_peak_memory_mb "${WORKER_JOB_PIDS[@]}"
-show_avg_monitor_cpu_usage "${WORKER_JOB_PIDS[@]}"
+show_avg_peak_memory_mb "${JOB_PIDS[@]}"
+show_avg_monitor_cpu_usage "${JOB_PIDS[@]}"
 
-kill "$JOB_PID" 2>/dev/null || true
-wait "$JOB_PID" 2>/dev/null || true
+kill "${JOB_PIDS[@]}" 2>/dev/null || true
+wait "${JOB_PIDS[@]}" 2>/dev/null || true
 
 #####################################################################
 
@@ -91,15 +87,14 @@ echo "==========================================="
 echo "Batch with 4 process + 8 queues + 5 threads"
 echo "==========================================="
 
-JOB_CONCURRENCY=4 ./bin/jobs > /dev/null 2>&1 &
-JOB_PID=$!
-
-read -a WORKER_JOB_PIDS <<< "$(find_worker_pids_by_parent "$JOB_PID")"
-# echo "WORKERS PIDS: ${WORKER_JOB_PIDS[@]}"
+for i in {0..3}; do
+  bundle exec sidekiq --concurrency "$THREADS" \
+    -q queue_0 -q queue_1 -q queue_2 -q queue_3 -q queue_4 -q queue_5 -q queue_6 -q queue_7 > /dev/null 2>&1 &
+  JOB_PIDS[i]=$!
+done
 
 declare -a CPU_SAMPLER_PIDS
-monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${WORKER_JOB_PIDS[@]}"
-# echo "SAMPLER PIDS: ${CPU_SAMPLER_PIDS[@]}"
+monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${JOB_PIDS[@]}"
 
 show_spinner_clean_batch
 show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
@@ -109,11 +104,11 @@ kill "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
 wait "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
 
 show_batch_duration
-show_avg_peak_memory_mb "${WORKER_JOB_PIDS[@]}"
-show_avg_monitor_cpu_usage "${WORKER_JOB_PIDS[@]}"
+show_avg_peak_memory_mb "${JOB_PIDS[@]}"
+show_avg_monitor_cpu_usage "${JOB_PIDS[@]}"
 
-kill "$JOB_PID" 2>/dev/null || true
-wait "$JOB_PID" 2>/dev/null || true
+kill "${JOB_PIDS[@]}" 2>/dev/null || true
+wait "${JOB_PIDS[@]}" 2>/dev/null || true
 
 #####################################################################
 
@@ -122,15 +117,14 @@ echo "==========================================="
 echo "Batch with 8 process + 8 queues + 5 threads"
 echo "==========================================="
 
-JOB_CONCURRENCY=8 ./bin/jobs > /dev/null 2>&1 &
-JOB_PID=$!
-
-read -a WORKER_JOB_PIDS <<< "$(find_worker_pids_by_parent "$JOB_PID")"
-# echo "WORKERS PIDS: ${WORKER_JOB_PIDS[@]}"
+for i in {0..7}; do
+  bundle exec sidekiq --concurrency "$THREADS" \
+    -q queue_0 -q queue_1 -q queue_2 -q queue_3 -q queue_4 -q queue_5 -q queue_6 -q queue_7 > /dev/null 2>&1 &
+  JOB_PIDS[i]=$!
+done
 
 declare -a CPU_SAMPLER_PIDS
-monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${WORKER_JOB_PIDS[@]}"
-# echo "SAMPLER PIDS: ${CPU_SAMPLER_PIDS[@]}"
+monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${JOB_PIDS[@]}"
 
 show_spinner_clean_batch
 show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
@@ -140,9 +134,9 @@ kill "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
 wait "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
 
 show_batch_duration
-show_avg_peak_memory_mb "${WORKER_JOB_PIDS[@]}"
-show_avg_monitor_cpu_usage "${WORKER_JOB_PIDS[@]}"
+show_avg_peak_memory_mb "${JOB_PIDS[@]}"
+show_avg_monitor_cpu_usage "${JOB_PIDS[@]}"
 
-kill "$JOB_PID" 2>/dev/null || true
-wait "$JOB_PID" 2>/dev/null || true
+kill "${JOB_PIDS[@]}" 2>/dev/null || true
+wait "${JOB_PIDS[@]}" 2>/dev/null || true
 

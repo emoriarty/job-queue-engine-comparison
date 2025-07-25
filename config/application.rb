@@ -25,6 +25,6 @@ module AdpAdapterGoodjob
     # config.eager_load_paths << Rails.root.join("extras")
 
     # ActiveJob adapter
-    config.active_job.queue_adapter = :solid_queue
+    config.active_job.queue_adapter = :sidekiq
   end
 end

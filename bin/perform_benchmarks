@@ -35,6 +35,7 @@ echo "==========================================="
 
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
+  GOOD_JOB_POLL_INTERVAL="0.1" \
   bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID=$!
 
@@ -66,10 +67,12 @@ echo "============================================="
 
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
+  GOOD_JOB_POLL_INTERVAL="0.1" \
   bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_ONE=$!
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
+  GOOD_JOB_POLL_INTERVAL="0.1" \
   bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_TWO=$!
 
@@ -109,18 +112,22 @@ echo "============================================="
 
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
+  GOOD_JOB_POLL_INTERVAL="0.1" \
   bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_ONE=$!
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
+  GOOD_JOB_POLL_INTERVAL="0.1" \
   bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_TWO=$!
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
+  GOOD_JOB_POLL_INTERVAL="0.1" \
   bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_THREE=$!
 GOOD_JOB_EXECUTION_MODE=external \
   GOOD_JOB_MAX_THREADS=5 \
+  GOOD_JOB_POLL_INTERVAL="0.1" \
   bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
 GOOD_JOB_PID_FOUR=$!
 
@@ -161,7 +168,10 @@ echo "Batch with 8 processes + 1 queue each + 5 threads"
 echo "================================================="
 
 for i in {0..7}; do
-  GOOD_JOB_EXECUTION_MODE=external bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
+  GOOD_JOB_EXECUTION_MODE=external \
+    GOOD_JOB_MAX_THREADS=5 \
+    GOOD_JOB_POLL_INTERVAL="0.1" \
+    bundle exec good_job start --queues="$QUEUES" > /dev/null 2>&1 &
   GOOD_JOB_PIDS[$i]=$!
 done
 

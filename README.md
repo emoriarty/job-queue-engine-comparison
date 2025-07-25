@@ -1,4 +1,4 @@
-# Que Benchmarks
+# Sidekiq Benchmarks
 
 Run the following Bash script from the terminal, starting at the project root:
 

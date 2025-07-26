@@ -42,7 +42,7 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
 
   for ((i=1;i<=WORKERS;i++)); do
     bundle exec que --worker-count "$THREADS" \
-      -q queue_0 -q queue_1 -q queue_2 -q queue_3 -q queue_4 -q queue_5 -q queue_6 -q queue_7 \
+      -q queue_0 -q queue_1 -q queue_2 -q queue_3 -q queue_4 \
       --poll-interval 0.1 > /dev/null 2>&1 &
     WPIDS[$i]=$!
   done

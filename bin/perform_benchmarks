@@ -1,15 +1,16 @@
 #!/bin/bash
-
+#
+# Example:
+#   ./perform_benchmarks.sh io 10000
+#
 set -euo pipefail
 
-JOB_TYPE=$1  # Type of bench: io | cpu
-JOBS_COUNT=$2
-
-echo
-echo "**********************************"
-echo "* BENCHMARKS FOR JOB TYPE: $JOB_TYPE"
-echo "* ACTUAL LOAD: $JOBS_COUNT jobs"
-echo "**********************************"
+JOB_TYPE=$1 # io | cpu
+JOBS=$2
+THREADS=5
+QUEUES=4
+RUNNER="que"
+CONCURRENCY_STEPS=(1 2 4 8)   # used for scalability loops
 
 # Use the script's directory to source the other scripts
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,138 +19,58 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/batch_clean.sh"
 . "$SCRIPT_DIR/batch_enqueue.sh"
 . "$SCRIPT_DIR/batch_duration.sh"
-. "$SCRIPT_DIR/batch_resource_report.sh"
 
-THREADS=5
-QUEUES_COUNT=8
+RESULTS_CSV="results_${RUNNER}_$(date +%Y%m%d_%H%M%S).csv"
+echo "workers,threads,avg_cpu_s,avg_rss_mb" > "$RESULTS_CSV"
 
-# ==========================================
-# Batch with 1 process + 8 queues + 5 threads
-# ==========================================
-echo
-echo "==========================================="
-echo "Batch with 1 process + 8 queues + 5 threads"
-echo "==========================================="
+echo "**********************************"
+echo " RUNNER:      $RUNNER"
+echo " JOB TYPE:    $JOB_TYPE"
+echo " ACTUAL LOAD: $JOBS jobs"
+echo " QUEUES     : $QUEUES"
+echo "**********************************"
 
-bundle exec que --worker-count "$THREADS" \
-  -q queue_0 -q queue_1 -q queue_2 -q queue_3 -q queue_4 -q queue_5 -q queue_6 -q queue_7 \
-  --poll-interval 0.1 > /dev/null 2>&1 &
-JOB_PIDS[0]=$!
+for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
+  echo
+  echo " $WORKERS WORKER(S) x $THREADS THREADS"
+  echo "========================================"
 
-declare -a CPU_SAMPLER_PIDS
-monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${JOB_PIDS[@]}"
+  show_spinner_clean_batch
 
-show_spinner_clean_batch
-show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
-show_spinner_until_jobs_complete "$JOBS_COUNT"
+  BATCH_ID=$(uuidgen)
+  WORKER_BOOT_MS=$(date +%s%3N)
 
-kill "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
-wait "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
+  for ((i=1;i<=WORKERS;i++)); do
+    bundle exec que --worker-count "$THREADS" \
+      -q queue_0 -q queue_1 -q queue_2 -q queue_3 -q queue_4 -q queue_5 -q queue_6 -q queue_7 \
+      --poll-interval 0.1 > /dev/null 2>&1 &
+    WPIDS[$i]=$!
+  done
 
-show_batch_duration
-show_avg_peak_memory_mb "${JOB_PIDS[@]}"
-show_avg_monitor_cpu_usage "${JOB_PIDS[@]}"
+  # 2. Start resource monitor ------------------------------------------------
+  RES_LOG="/tmp/resources_${BATCH_ID}.csv"
+  "$SCRIPT_DIR/benchmarks/monitor_resources.sh" "$RES_LOG" "${WPIDS[@]}" &
+  MONITOR_PID=$!
 
-kill "${JOB_PIDS[@]}" 2>/dev/null || true
-wait "${JOB_PIDS[@]}" 2>/dev/null || true
+  # 3. Enqueue jobs ----------------------------------------------------------
+  show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES" "$JOBS"
+  show_spinner_until_jobs_complete "$JOBS"
 
-# ==========================================
-# Batch with 2 process + 8 queues + 5 threads
-# ==========================================
-echo
-echo "==========================================="
-echo "Batch with 2 process + 8 queues + 5 threads"
-echo "==========================================="
+  # 6. Stop monitor & workers -----------------------------------------------
+  kill "$MONITOR_PID" 2>/dev/null || true
+  wait "$MONITOR_PID" 2>/dev/null || true
+  kill "${WPIDS[@]}"   2>/dev/null || true
+  wait "${WPIDS[@]}" 2>/dev/null || true
 
-for i in {0..1}; do
-  bundle exec que --worker-count "$THREADS" \
-    -q queue_0 -q queue_1 -q queue_2 -q queue_3 -q queue_4 -q queue_5 -q queue_6 -q queue_7 \
-    --poll-interval 0.1 > /dev/null 2>&1 &
-  JOB_PIDS[$i]=$!
+  # 5. Compute metrics -------------------------------------------------------
+  show_batch_duration
+  # Average CPU-seconds & RSS (MB) from resource log
+  read -r AVG_CPU AVG_RSS <<<"$(awk -F, 'NR>1 {cpu+=$3; rss+=$2; n++} END {printf "%.2f %.2f", cpu/n, rss/n/1024}' "$RES_LOG")"
+
+  # 7. Persist results -------------------------------------------------------
+  printf '%s,%s,%s,%s,%s\n' \
+     "$WORKERS" "$THREADS" "$AVG_CPU" "$AVG_RSS" \
+     >> "$RESULTS_CSV"
 done
-echo "JOB_PIDS: ${JOB_PIDS[@]}"
 
-declare -a CPU_SAMPLER_PIDS
-monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${JOB_PIDS[@]}"
-
-show_spinner_clean_batch
-show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
-show_spinner_until_jobs_complete "$JOBS_COUNT"
-
-kill "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
-wait "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
-
-show_batch_duration
-show_avg_peak_memory_mb "${JOB_PIDS[@]}"
-show_avg_monitor_cpu_usage "${JOB_PIDS[@]}"
-
-kill "${JOB_PIDS[@]}" 2>/dev/null || true
-wait "${JOB_PIDS[@]}" 2>/dev/null || true
-
-
-# ==========================================
-# Batch with 4 process + 8 queues + 5 threads
-# ==========================================
-echo
-echo "==========================================="
-echo "Batch with 4 process + 8 queues + 5 threads"
-echo "==========================================="
-
-for i in {0..3}; do
-  bundle exec que --worker-count "$THREADS" \
-    -q queue_0 -q queue_1 -q queue_2 -q queue_3 -q queue_4 -q queue_5 -q queue_6 -q queue_7 \
-    --poll-interval 0.1 > /dev/null 2>&1 &
-  JOB_PIDS[$i]=$!
-done
-echo "JOB_PIDS: ${JOB_PIDS[@]}"
-
-declare -a CPU_SAMPLER_PIDS
-monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${JOB_PIDS[@]}"
-
-show_spinner_clean_batch
-show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
-show_spinner_until_jobs_complete "$JOBS_COUNT"
-
-kill "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
-wait "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
-
-show_batch_duration
-show_avg_peak_memory_mb "${JOB_PIDS[@]}"
-show_avg_monitor_cpu_usage "${JOB_PIDS[@]}"
-
-kill "${JOB_PIDS[@]}" 2>/dev/null || true
-wait "${JOB_PIDS[@]}" 2>/dev/null || true
-
-
-# ==========================================
-# Batch with 8 process + 8 queues + 5 threads
-# ==========================================
-echo
-echo "==========================================="
-echo "Batch with 8 process + 8 queues + 5 threads"
-echo "==========================================="
-
-for i in {0..7}; do
-  bundle exec que --worker-count "$THREADS" \
-    -q queue_0 -q queue_1 -q queue_2 -q queue_3 -q queue_4 -q queue_5 -q queue_6 -q queue_7 \
-    --poll-interval 0.1 > /dev/null 2>&1 &
-  JOB_PIDS[$i]=$!
-done
-echo "JOB_PIDS: ${JOB_PIDS[@]}"
-
-declare -a CPU_SAMPLER_PIDS
-monitor_cpu_usage_dynamic CPU_SAMPLER_PIDS "${JOB_PIDS[@]}"
-
-show_spinner_clean_batch
-show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES_COUNT" "$JOBS_COUNT"
-show_spinner_until_jobs_complete "$JOBS_COUNT"
-
-kill "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
-wait "${CPU_SAMPLER_PIDS[@]}" 2>/dev/null || true
-
-show_batch_duration
-show_avg_peak_memory_mb "${JOB_PIDS[@]}"
-show_avg_monitor_cpu_usage "${JOB_PIDS[@]}"
-
-kill "${JOB_PIDS[@]}" 2>/dev/null || true
-wait "${JOB_PIDS[@]}" 2>/dev/null || true
+echo "✅ Benchmark finished → $RESULTS_CSV"

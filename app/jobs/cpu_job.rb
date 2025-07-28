@@ -1,5 +1,5 @@
 class CpuJob < ApplicationJob
-  def perform
+  def perform(_job_id)
     get_fibonacci(10000)
   end
 

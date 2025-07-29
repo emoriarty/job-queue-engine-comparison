@@ -8,7 +8,7 @@ set -euo pipefail
 JOB_TYPE="cpu"
 JOBS=$1
 QUEUES=1
-RUNNER="delayed_job"
+RUNNER="queue_classic"
 CONCURRENCY_STEPS=(1 2 4 8 16) # How many workers
 
 # Use the script's directory to source the other scripts
@@ -38,7 +38,7 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   BATCH_ID=$(uuidgen)
 
   for ((i=1;i<=WORKERS;i++)); do
-    QUEUES="queue_0" "$SCRIPT_DIR/rails" jobs:work > /dev/null 2>&1 &
+    QUEUES="queue_0" "$SCRIPT_DIR/rails" qc:work > /dev/null 2>&1 &
     WPIDS[$i]=$!
   done
 
@@ -59,7 +59,7 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   # 5. Stop monitor & workers -----------------------------------------------
   kill "$MONITOR_PID" 2>/dev/null || true
   wait "$MONITOR_PID" 2>/dev/null || true
-  kill "${WPIDS[@]}"   2>/dev/null || true
+  kill -9 "${WPIDS[@]}" 2>/dev/null || true
   wait "${WPIDS[@]}" 2>/dev/null || true
 
   # 6. Compute metrics -------------------------------------------------------

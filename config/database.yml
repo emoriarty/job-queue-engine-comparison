@@ -13,19 +13,19 @@ default: &default
 
 development:
   <<: *default
-  database: adp_adapter_good_job_development
+  database: app_delayed_job_development
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: adp_adapter_good_job_test
+  database: app_delayed_job_test
 
 production:
   primary:
     <<: *default
-    database: adp_adapter_good_job
+    database: app_delayed_job
   queue:
     <<: *default
-    database: app_queue
+    database: app_delayed_job_queue

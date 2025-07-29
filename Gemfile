@@ -44,9 +44,6 @@ gem "bootsnap", require: false
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
 
-# GoodJob is a multithreaded, Postgres-based, ActiveJob backend for Ruby on Rails.
-gem "good_job", "~> 3.26"
-
 # A Ruby static code analyzer and formatter, based on the community Ruby style guide.
 gem "standardrb", "~> 1.0"
 
@@ -75,3 +72,5 @@ end
 
 gem "benchmark-ips", "~> 2.13"
 gem "benchmark-memory", "~> 0.2.0"
+
+gem "delayed_job_active_record", "~> 4.1"

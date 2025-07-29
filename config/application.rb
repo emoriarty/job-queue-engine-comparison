@@ -25,7 +25,7 @@ module AdpAdapterGoodjob
     # config.eager_load_paths << Rails.root.join("extras")
 
     # ActiveJob adapter
-    config.active_job.queue_adapter = :good_job
+    config.active_job.queue_adapter = :delayed_job
     config.good_job = {
       # max_threads: 10,
       # max_threads: 20,

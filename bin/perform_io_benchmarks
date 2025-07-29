@@ -9,7 +9,7 @@ JOB_TYPE="io"
 JOBS=$1
 WORKERS=4
 QUEUES=1
-RUNNER="good_job"
+RUNNER="delayed_job"
 CONCURRENCY_STEPS=(1 2 4 8 16) # How many threads
 
 # Use the script's directory to source the other scripts
@@ -31,7 +31,7 @@ echo "**********************************"
 
 for THREADS in "${CONCURRENCY_STEPS[@]}"; do
   echo
-  echo " $WORKERS WORKER(S) x $THREADS THREADS"
+  echo " $WORKERS WORKER(S)"
   echo "========================================"
 
   show_spinner_clean_batch
@@ -40,10 +40,7 @@ for THREADS in "${CONCURRENCY_STEPS[@]}"; do
   WORKER_BOOT_MS=$(date +%s%3N)
 
   for ((i=1;i<=WORKERS;i++)); do
-    GOOD_JOB_EXECUTION_MODE=external \
-      GOOD_JOB_MAX_THREADS=$THREADS \
-      GOOD_JOB_POLL_INTERVAL=0.1 \
-      bundle exec good_job start --queues="queue_0" > /dev/null 2>&1 &
+    QUEUES="queue_0" "$SCRIPT_DIR/rails" jobs:work > /dev/null 2>&1 &
     WPIDS[$i]=$!
   done
 
@@ -89,8 +86,8 @@ for THREADS in "${CONCURRENCY_STEPS[@]}"; do
   # | **Cold-start**   | `date` before boot vs. first `started_at` (`run_benchmark.sh`)          |
 
   # 7. Persist results -------------------------------------------------------
-  printf '%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
-     "$THREADS" "$THROUGHPUT" "$COLD_MS" "$AVG_CPU" "$AVG_RSS" "$P50" "$P90" "$P99" "$DUR_SEC"  \
+  printf '%s,%s,%s,%s,%s,%s,%s,%s\n' \
+     "$THROUGHPUT" "$COLD_MS" "$AVG_CPU" "$AVG_RSS" "$P50" "$P90" "$P99" "$DUR_SEC"  \
      >> "$RESULTS_CSV"
 done
 

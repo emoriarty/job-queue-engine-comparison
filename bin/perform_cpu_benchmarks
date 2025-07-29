@@ -7,9 +7,8 @@ set -euo pipefail
 
 JOB_TYPE="cpu"
 JOBS=$1
-THREADS=4
 QUEUES=1
-RUNNER="qood_job"
+RUNNER="delayed_job"
 CONCURRENCY_STEPS=(1 2 4 8 16) # How many workers
 
 # Use the script's directory to source the other scripts
@@ -31,7 +30,7 @@ echo "**********************************"
 
 for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   echo
-  echo " $WORKERS WORKER(S) x $THREADS THREADS"
+  echo " $WORKERS WORKER(S)"
   echo "========================================"
 
   show_spinner_clean_batch
@@ -39,10 +38,7 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   BATCH_ID=$(uuidgen)
 
   for ((i=1;i<=WORKERS;i++)); do
-    GOOD_JOB_EXECUTION_MODE=external \
-      GOOD_JOB_MAX_THREADS=$THREADS \
-      GOOD_JOB_POLL_INTERVAL=0.1 \
-      bundle exec good_job start --queues="queue_0" > /dev/null 2>&1 &
+    QUEUES="queue_0" "$SCRIPT_DIR/rails" jobs:work > /dev/null 2>&1 &
     WPIDS[$i]=$!
   done
 

@@ -74,3 +74,7 @@ gem "benchmark-ips", "~> 2.13"
 gem "benchmark-memory", "~> 0.2.0"
 
 gem "delayed_job_active_record", "~> 4.1"
+
+gem "daemons", "~> 1.4"
+
+gem "delayed_job_web", "~> 1.4"

@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+
+require 'csv'
+require 'time'
+
+TOOL = "que".freeze
+JOB_TYPE = "io".freeze
+COLUMNS = %w[
+  throughput_jps
+  cold_start_ms
+  avg_cpu_s
+  avg_rss_mb
+  p50_lat
+  p90_lat
+  p99_lat
+  duration
+]
+
+def median(array)
+  sorted = array.compact.sort
+  len = sorted.length
+  return nil if len.zero?
+  len.odd? ? sorted[len / 2] : (sorted[len / 2 - 1] + sorted[len / 2]) / 2.0
+end
+
+# 1. Collect all CSV files matching io_results_*
+csv_files = Dir.glob("#{JOB_TYPE}_results_#{TOOL}_*.csv")
+if csv_files.empty?
+  puts "No CSV files found matching io_results_*"
+  exit
+end
+
+# 2. Aggregate data: {key(first column) => {col => [values...]}}
+aggregated = Hash.new { |h, k| h[k] = Hash.new { |hh, kk| hh[kk] = [] } }
+headers = nil
+key_column = nil
+
+csv_files.each do |file|
+  CSV.foreach(file, headers: true) do |row|
+    headers ||= row.headers
+    key_column ||= headers.first
+    key = row[key_column]
+
+    COLUMNS.each do |col|
+      value = Float(row[col]) rescue nil
+      aggregated[key][col] << value if value
+    end
+    puts aggregated
+  end
+end
+
+# 3. Compute median per key (row)
+median_rows = aggregated.keys.sort_by { |k| k.to_i }.map do |key|
+  medians = COLUMNS.map { |col| median(aggregated[key][col]) }
+  [key, *medians]
+end
+
+# 4. Output CSV
+timestamp = Time.now.strftime("%Y%m%d_%H%M%S")
+output_file = "#{JOB_TYPE}_median_#{TOOL}_#{timestamp}.csv"
+
+CSV.open(output_file, 'w') do |csv|
+  csv << [key_column, *COLUMNS]
+  median_rows.each { |row| csv << row }
+end
+
+puts "✅ Median CSV written to #{output_file}"
+

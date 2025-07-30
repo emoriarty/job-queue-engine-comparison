@@ -4,9 +4,11 @@ This repository contains the code used to benchmark the most popular **database-
 
 The libraries under evaluation are:
 
-- [GoodJob](https://github.com/bensheldon/good_job/) ([test branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/goodjob))
-- [SolidQueue](https://github.com/rails/solid_queue) ([test branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/solid_queue))
-- [Que](https://github.com/que-rb/que) ([test branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/que))
+- [GoodJob](https://github.com/bensheldon/good_job/) ([branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/goodjob))
+- [Solid Queue](https://github.com/rails/solid_queue) ([branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/solid_queue))
+- [que](https://github.com/que-rb/que) ([branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/que))
+- [Queue Classic](https://github.com/QueueClassic/queue_classic) ([branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/queue_classic))
+- [Delayed::Job](https://github.com/collectiveidea/delayed_job) ([branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/delayed_job))
 
 Each runner is tested in its own dedicated Git branch to ensure isolation and reproducibility of results.
 
@@ -22,21 +24,16 @@ All tests were executed on the following system:
 - **CPU:** AMD Ryzen 7 7700 (16 cores)  
 - **Memory:** 64 GB RAM  
 
-**Shared benchmark parameters:**
-
-- **Threads per worker:** 5  
-- **Number of queues or pools:** 8  
-
 **Technical stack:**
 
 - **Ruby:** 3.2 (MRI/CRuby) 
 - **Rails:** 7.1  
 - **PostgreSQL:** 17.5  
-- **Environment:** `RAILS_ENV=production`  
+- **Environment:** `RAILS_ENV=production`
 
 ### Additional Considerations
 
-- To ensure the most consistent setup across job runners, separate databases were used for GoodJob and Que, matching SolidQueue’s default behavior of isolating its queue backend. While this may not be a critical factor—since all runners ultimately rely on the same RDBMS—it could slightly affect performance due to differences in caching and database connections.
+- To ensure the most consistent setup across job runners, separate databases were used to match SolidQueue’s default behavior of isolating its queue backend. While this may not be a critical factor—since all runners ultimately rely on the same RDBMS—it could slightly affect performance due to differences in caching and database connections.
 
 - In this setup, each worker is configured to process jobs from **all defined queues**, ensuring maximum flexibility and even workload distribution across the system.
 

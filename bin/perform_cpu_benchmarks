@@ -10,7 +10,7 @@ JOBS=$1
 THREADS=4
 QUEUES=1
 RUNNER="solid_queue"
-CONCURRENCY_STEPS=(1 2 4 8 16) # How many workers
+CONCURRENCY_STEPS=(1 2 4 8) # How many workers
 
 # Use the script's directory to source the other scripts
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

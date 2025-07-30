@@ -9,7 +9,7 @@ JOB_TYPE="io"
 JOBS=$1
 WORKERS=4
 QUEUES=1
-RUNNER="good_job"
+RUNNER="solid_queue"
 CONCURRENCY_STEPS=(1 2 4 8) # How many threads
 
 # Use the script's directory to source the other scripts

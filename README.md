@@ -9,6 +9,7 @@ The libraries under evaluation are:
 - [que](https://github.com/que-rb/que) ([branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/que))
 - [Queue Classic](https://github.com/QueueClassic/queue_classic) ([branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/queue_classic))
 - [Delayed::Job](https://github.com/collectiveidea/delayed_job) ([branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/delayed_job))
+- [Sidekiq](https://github.com/sidekiq/sidekiq) ([branch](https://github.com/emoriarty/job-queue-engine-comparison/tree/sidekiq))
 
 Each runner is tested in its own dedicated Git branch to ensure isolation and reproducibility of results.
 

@@ -1,6 +1,6 @@
-# DB-based Queuing Backend Benchmarks
+# DB-backed Background Processing Frameworks Benchmarks
 
-This repository contains the code used to benchmark the most popular **database-backed job runners** in the Ruby (and Rails) ecosystem—excluding the more common Redis-based alternatives like Sidekiq.
+This repository contains the code used to benchmark the most popular database-backed background processing frameworks in the Ruby (and Rails) ecosystem, and compares their performance with Sidekiq, the widely used Redis-based solution.
 
 The libraries under evaluation are:
 

@@ -10,7 +10,7 @@ JOBS=$1
 WORKERS=4
 QUEUES=1
 RUNNER="sidekiq"
-CONCURRENCY_STEPS=(1 2 4 8 16) # How many threads
+CONCURRENCY_STEPS=(1 2 4 8) # How many threads
 
 # Use the script's directory to source the other scripts
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

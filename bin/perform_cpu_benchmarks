@@ -9,8 +9,8 @@ JOB_TYPE="cpu"
 JOBS=$1
 THREADS=4
 QUEUES=1
-RUNNER="qood_job"
-CONCURRENCY_STEPS=(1 2 4 8 16) # How many workers
+RUNNER="good_job"
+CONCURRENCY_STEPS=(1 2 4 8) # How many workers
 
 # Use the script's directory to source the other scripts
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

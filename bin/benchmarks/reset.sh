@@ -12,13 +12,13 @@ function reset_batch() {
 
   while kill -0 "$CLEAN_PID" 2>/dev/null; do
     i=$(( (i+1) % 4 ))
-    printf "\rCleaning... %s" "${spinner:$i:1}"
+    printf "\rCleaning... %s                                 " "${spinner:$i:1}"
     sleep "$delay"
   done
 
   wait "$CLEAN_PID"
   local status=$?
-  printf "\rCleaning completed.       "
+  printf "\rCleaning completed.                     "
   tput cnorm 2>/dev/null
 
   return $status

@@ -27,12 +27,12 @@ RUBY
   ENQUEUE_PID=$!
   while kill -0 "$ENQUEUE_PID" 2>/dev/null; do
     i=$(( (i+1) % 4 ))
-    printf "\rEnqueuing jobs... %s" "${spinner:$i:1}"
+    printf "\rEnqueuing jobs... %s                            " "${spinner:$i:1}"
     sleep 0.1
   done
   wait "$ENQUEUE_PID"
   tput cnorm
-  printf "\rEnqueuing completed.                            "
+  printf "\rEnqueuing completed.                              "
 )
 }
 

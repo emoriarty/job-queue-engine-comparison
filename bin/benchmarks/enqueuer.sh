@@ -19,9 +19,7 @@ function enqueue_jobs() {
     klass = Object.const_get("$class_name")
     queue_count.times do |i|
       job_count.times do
-        job_id = SecureRandom.uuid
-        JobBenchmark.create!(job_id:, queued_at: Time.now, job_type: "${job_type,,}")
-        klass.set(queue: "queue_#{i}").perform_later(job_id)
+        klass.set(queue: "queue_#{i}").perform_later(Time.now)
       end
     end
 RUBY

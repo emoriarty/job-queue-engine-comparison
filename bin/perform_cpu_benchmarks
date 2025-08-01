@@ -69,7 +69,7 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   reset_batch
   enqueue_jobs "$JOB_TYPE" "$QUEUES" "$JOBS"
 
-  # 6. Wait until queues are empty
+  # 6. Wait until queues are empty -------------------------------------------
   display_progress_until_jobs_complete "$JOBS"
   printf "\rAll jobs completed.                                                  \n"
 

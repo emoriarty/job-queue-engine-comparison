@@ -15,12 +15,12 @@ CONCURRENCY_STEPS=(1 2 4 8) # How many workers
 # Use the script's directory to source the other scripts
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-. "$SCRIPT_DIR/batch_spinner.sh"
-. "$SCRIPT_DIR/batch_clean.sh"
-. "$SCRIPT_DIR/batch_enqueue.sh"
+. "$SCRIPT_DIR/benchmarks/reset.sh"
+. "$SCRIPT_DIR/benchmarks/spinner.sh"
+. "$SCRIPT_DIR/benchmarks/enqueuer.sh"
 
 RESULTS_CSV="cpu_results_${RUNNER}_$(date +%Y%m%d_%H%M%S).csv"
-echo "processes,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat,p90_lat,p99_lat,duration" > "$RESULTS_CSV"
+echo "processes,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s" > "$RESULTS_CSV"
 
 echo "**********************************"
 echo " RUNNER:      $RUNNER"
@@ -34,10 +34,11 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   echo " $WORKERS WORKER(S) x $THREADS THREADS"
   echo "========================================"
 
-  show_spinner_clean_batch
+  reset_batch
 
   BATCH_ID=$(uuidgen)
 
+  # 1. Launch workers --------------------------------------------------------
   for ((i=1;i<=WORKERS;i++)); do
     GOOD_JOB_EXECUTION_MODE=external \
       GOOD_JOB_MAX_THREADS=$THREADS \
@@ -46,37 +47,47 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
     WPIDS[$i]=$!
   done
 
-  # 2. Start resource monitor ------------------------------------------------
+  # 2. Warming up ------------------------------------------------------------
+  WORKER_BOOT_MS=$(date +%s%3N)
+
+  printf "\rWarming up workers...                                                  "
+  WARMUP_JOBS=$((JOBS / 20)) # ~5% of total jobs
+  enqueue_jobs "$JOB_TYPE" "$QUEUES" "$WARMUP_JOBS"
+  display_progress_until_jobs_complete "$WARMUP_JOBS"
+  printf "\rWarmup complete. Starting real benchmark...                            "
+
+  # 3. Capture cold start metric ---------------------------------------------
+  FIRST_START_MS=$(bundle exec rails runner "puts (JobBenchmark.all.minimum(Arel.sql('EXTRACT(EPOCH FROM started_at)')) * 1000).to_i")
+  COLD_MS=$(( FIRST_START_MS - WORKER_BOOT_MS ))
+
+  # 4. Start resource monitor ------------------------------------------------
   RES_LOG="/tmp/resources_${BATCH_ID}.csv"
   "$SCRIPT_DIR/benchmarks/monitor_resources.sh" "$RES_LOG" "${WPIDS[@]}" &
   MONITOR_PID=$!
 
-  WORKER_BOOT_MS=$(date +%s%3N)
+  # 5. Enqueue jobs ----------------------------------------------------------
+  reset_batch
+  enqueue_jobs "$JOB_TYPE" "$QUEUES" "$JOBS"
 
-  # 3. Enqueue jobs ----------------------------------------------------------
-  show_spinner_enqueue_jobs "$JOB_TYPE" "$QUEUES" "$JOBS"
-
-  # 4. Wait until queues are empty
-  show_spinner_until_jobs_complete "$JOBS"
+  # 6. Wait until queues are empty
+  display_progress_until_jobs_complete "$JOBS"
   echo
 
-  # 5. Stop monitor & workers -----------------------------------------------
+  # 7. Stop monitor & workers -----------------------------------------------
   kill "$MONITOR_PID" 2>/dev/null || true
   wait "$MONITOR_PID" 2>/dev/null || true
   kill "${WPIDS[@]}"   2>/dev/null || true
   wait "${WPIDS[@]}" 2>/dev/null || true
 
-  # 6. Compute metrics -------------------------------------------------------
+  # 8. Compute metrics -------------------------------------------------------
   DUR_SEC=$(bundle exec rails runner "puts JobBenchmark.all.pluck(Arel.sql('EXTRACT(EPOCH FROM MAX(finished_at) - MIN(started_at))')).first.to_f")
   THROUGHPUT=$(awk -v j="$JOBS" -v d="$DUR_SEC" 'BEGIN{printf "%.2f", j/d}')
-  FIRST_START_MS=$(bundle exec rails runner "puts (JobBenchmark.all.minimum(Arel.sql('EXTRACT(EPOCH FROM started_at)'))*1000).to_i")
-  COLD_MS=$(( FIRST_START_MS - WORKER_BOOT_MS ))
 
   # Average CPU-seconds & RSS (MB) from resource log
   read -r AVG_CPU AVG_RSS <<<"$(awk -F, 'NR>1 {cpu+=$3; rss+=$2; n++} END {printf "%.2f %.2f", cpu/n, rss/n/1024}' "$RES_LOG")"
 
   # Latency percentiles
-  read -r P50 P90 P99 <<<"$("$SCRIPT_DIR/benchmarks/latency_report.sh" "$BATCH_ID")"
+  read -r P50 P90 P99 <<<"$("$SCRIPT_DIR/benchmarks/latency_report.sh")"
 
   # How to read CSV output
   # ======================
@@ -87,7 +98,7 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   # | **CPU / Memory** | Per-second samples summed/averaged in `monitor_resources.sh`            |
   # | **Cold-start**   | `date` before boot vs. first `started_at` (`run_benchmark.sh`)          |
 
-  # 7. Persist results -------------------------------------------------------
+  # 9. Persist results -------------------------------------------------------
   printf '%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
      "$WORKERS" "$THROUGHPUT" "$COLD_MS" "$AVG_CPU" "$AVG_RSS" "$P50" "$P90" "$P99" "$DUR_SEC"  \
      >> "$RESULTS_CSV"

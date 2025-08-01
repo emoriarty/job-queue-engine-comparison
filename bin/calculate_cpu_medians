@@ -10,10 +10,10 @@ COLUMNS = %w[
   cold_start_ms
   avg_cpu_s
   avg_rss_mb
-  p50_lat
-  p90_lat
-  p99_lat
-  duration
+  p50_lat_ms
+  p90_lat_ms
+  p99_lat_ms
+  duration_s
 ]
 
 def median(array)

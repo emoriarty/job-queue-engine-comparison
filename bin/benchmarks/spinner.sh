@@ -1,4 +1,4 @@
-function show_spinner_until_jobs_complete() {
+function display_progress_until_jobs_complete() {
   local spinner='|/-\'
   local delay=0.1
   local i=0

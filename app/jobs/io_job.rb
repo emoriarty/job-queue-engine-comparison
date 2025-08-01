@@ -1,7 +1,7 @@
 require "json"
 
 class IoJob < ApplicationJob
-  def perform(_job_id)
+  def perform(_queued_at)
     @lines ||= File.readlines(Rails.root.join("lib", "movie_ids_04_13_2024.json"))
     data = JSON.parse(@lines.sample)
     title = data["original_title"]

@@ -9,9 +9,8 @@ class ApplicationJob < ActiveJob::Base
     started_at = Time.now
     block.call
     finished_at = Time.now
-    job_id = job.arguments.first
-    record = JobBenchmark.find_by!(job_id:)
-    record.update!(started_at:, finished_at:, duration: finished_at - started_at)
+    queued_at = job.arguments.first
+    JobBenchmark.create!(queued_at:, started_at:, finished_at:, duration: finished_at - started_at)
   end
 
   def job_type

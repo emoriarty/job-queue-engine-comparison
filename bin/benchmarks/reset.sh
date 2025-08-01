@@ -17,14 +17,14 @@ function show_spinner_clean_batch() {
   tput cnorm 2>/dev/null
 }
 
-function show_spinner_clean_batch() {
+function reset_batch() {
   local spinner='|/-\\'
   local delay=0.1
   local i=0
   local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
   tput civis 2>/dev/null
-  "$script_dir/../bin/rails" runner "JobBenchmark.delete_all" > /dev/null 2>&1 &
+  bin/rails runner "JobBenchmark.delete_all" 2>&1 &
   local CLEAN_PID=$!
 
   while kill -0 "$CLEAN_PID" 2>/dev/null; do

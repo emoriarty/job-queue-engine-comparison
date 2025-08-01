@@ -1,4 +1,4 @@
-function show_spinner_enqueue_jobs() {
+function enqueue_jobs() {
   local spinner='|/-\\'
   local delay=0.1
   local i=0
@@ -13,7 +13,7 @@ function show_spinner_enqueue_jobs() {
   tput civis
   i=0
   local spinner='|/-\\'
-  "$script_dir/../bin/rails" runner "$(cat <<RUBY
+  bin/rails runner "$(cat <<RUBY
     queue_count = $queue_count
     job_count = $job_count_per_queue
     klass = Object.const_get("$class_name")

@@ -6,17 +6,18 @@ function display_progress_until_jobs_complete() {
 
   tput civis  # Hide cursor
   while true; do
-    local pending=$(bin/rails runner "puts JobBenchmark.where(finished_at: nil).count" || echo 0)
+    local count
+    count=$(bin/rails runner "puts JobBenchmark.where.not(finished_at: nil).count" 2>/dev/null || echo 0)
 
-    if [[ "$pending" -ge "0" ]]; then
+    if [[ "$count" -ge "$jobs_count" ]]; then
       break
     fi
 
+    local pending=$(( jobs_count - count ))
     i=$(( (i+1) % 4 ))
     printf "\rWaiting for jobs to finish... %s (Pending jobs: %d)         " "${spinner:$i:1}" "$pending"
     sleep "$delay"
   done
-  printf "\rAll jobs completed.                                                  \n"
   tput cnorm  # Show cursor
 }
 

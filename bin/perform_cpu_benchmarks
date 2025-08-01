@@ -68,12 +68,12 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
 
   # 6. Wait until queues are empty
   display_progress_until_jobs_complete "$JOBS"
-  echo
+  printf "\rAll jobs completed.                                                  \n"
 
   # 7. Stop monitor & workers -----------------------------------------------
   kill "$MONITOR_PID" 2>/dev/null || true
   wait "$MONITOR_PID" 2>/dev/null || true
-  kill "${WPIDS[@]}"   2>/dev/null || true
+  kill "${WPIDS[@]}" 2>/dev/null || true
   wait "${WPIDS[@]}" 2>/dev/null || true
 
   # 8. Compute metrics -------------------------------------------------------

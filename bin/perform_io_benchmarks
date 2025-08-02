@@ -56,6 +56,10 @@ for THREADS in "${CONCURRENCY_STEPS[@]}"; do
   display_progress_until_jobs_complete "$WARMUP_JOBS"
   printf "\rWarmup complete. Starting real benchmark...                            "
 
+  # 3. Capture cold start metric ---------------------------------------------
+  FIRST_START_MS=$(bundle exec rails runner "puts (JobBenchmark.all.minimum(Arel.sql('EXTRACT(EPOCH FROM started_at)')) * 1000).to_i")
+  COLD_MS=$(( FIRST_START_MS - WORKER_BOOT_MS ))
+
   # 4. Start resource monitor ------------------------------------------------
   RES_LOG="/tmp/resources_${BATCH_ID}.csv"
   "$SCRIPT_DIR/benchmarks/monitor_resources.sh" "$RES_LOG" "${WPIDS[@]}" &

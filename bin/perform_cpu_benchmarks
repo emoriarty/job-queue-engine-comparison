@@ -20,7 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/benchmarks/enqueuer.sh"
 
 RESULTS_CSV="cpu_results_${RUNNER}_$(date +%Y%m%d_%H%M%S).csv"
-echo "processes,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s" > "$RESULTS_CSV"
+echo "processes,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
 
 echo "**********************************"
 echo " RUNNER:      $RUNNER"
@@ -39,7 +39,7 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   BATCH_ID=$(uuidgen)
 
   # 1. Launch workers --------------------------------------------------------
-  for ((i=1;i<=WORKERS;i++)); do
+  for ((i=0;i<WORKERS;i++)); do
     GOOD_JOB_EXECUTION_MODE=external \
       GOOD_JOB_MAX_THREADS=$THREADS \
       GOOD_JOB_POLL_INTERVAL=0.1 \
@@ -82,6 +82,7 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   # 8. Compute metrics -------------------------------------------------------
   DUR_SEC=$(bundle exec rails runner "puts JobBenchmark.all.pluck(Arel.sql('EXTRACT(EPOCH FROM MAX(finished_at) - MIN(started_at))')).first.to_f")
   THROUGHPUT=$(awk -v j="$JOBS" -v d="$DUR_SEC" 'BEGIN{printf "%.2f", j/d}')
+  ACTUAL_WORKERS_COUNT=$(bundle exec rails runner "puts JobBenchmark.group(:pid).count.to_json")
 
   # Average CPU-seconds & RSS (MB) from resource log
   read -r AVG_CPU AVG_RSS <<<"$(awk -F, 'NR>1 {cpu+=$3; rss+=$2; n++} END {printf "%.2f %.2f", cpu/n, rss/n/1024}' "$RES_LOG")"
@@ -99,8 +100,8 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   # | **Cold-start**   | `date` before boot vs. first `started_at` (`run_benchmark.sh`)          |
 
   # 9. Persist results -------------------------------------------------------
-  printf '%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
-     "$WORKERS" "$THROUGHPUT" "$COLD_MS" "$AVG_CPU" "$AVG_RSS" "$P50" "$P90" "$P99" "$DUR_SEC"  \
+  printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
+     "$WORKERS" "$THROUGHPUT" "$COLD_MS" "$AVG_CPU" "$AVG_RSS" "$P50" "$P90" "$P99" "$DUR_SEC" "$ACTUAL_WORKERS_COUNT"  \
      >> "$RESULTS_CSV"
 done
 

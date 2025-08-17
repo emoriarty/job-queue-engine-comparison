@@ -1,16 +1,19 @@
 #!/bin/bash
 #
 # Example:
-#   ./perform_cpu_benchmarks.sh 10000
+#   ./perform_io_benchmarks.sh 10000
 #
 set -euo pipefail
 
-JOB_TYPE="cpu"
+JOB_TYPE="io"
+WORKERS=8
 JOBS=$1
-THREADS=4
-QUEUES=1
-RUNNER="good_job"
-CONCURRENCY_STEPS=(1 2 4 8) # How many workers
+shift
+RUNNER=$1
+shift
+BENCHMARK_TYPE=$1
+shift
+CONCURRENCY_STEPS=("$@")
 
 # Use the script's directory to source the other scripts
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,17 +22,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/benchmarks/spinner.sh"
 . "$SCRIPT_DIR/benchmarks/enqueuer.sh"
 
-RESULTS_CSV="cpu_results_${RUNNER}_$(date +%Y%m%d_%H%M%S).csv"
-echo "processes,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
+RESULTS_CSV="${JOB_TYPE}_${BENCHMARK_TYPE}_results_${RUNNER}_$(date +%Y%m%d_%H%M%S).csv"
+echo "threads,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
 
 echo "**********************************"
-echo " RUNNER:      $RUNNER"
-echo " JOB TYPE:    $JOB_TYPE"
-echo " ACTUAL LOAD: $JOBS jobs"
-echo " QUEUES     : $QUEUES"
+echo " BENCHMARK TYPE: ${BENCHMARK_TYPE^^}"
+echo " RUNNER:         $RUNNER"
+echo " JOB TYPE:       $JOB_TYPE"
+echo " ACTUAL LOAD:    $JOBS jobs"
 echo "**********************************"
 
-for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
+for THREADS in "${CONCURRENCY_STEPS[@]}"; do
   echo
   echo " $WORKERS WORKER(S) x $THREADS THREADS"
   echo "========================================"
@@ -38,12 +41,25 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
 
   BATCH_ID=$(uuidgen)
 
+  if [[ "$BENCHMARK_TYPE" == "sharded_queues" ]]; then
+    QUEUES=$WORKERS
+  else
+    QUEUES=1
+  fi
+
   # 1. Launch workers --------------------------------------------------------
   for ((i=0;i<WORKERS;i++)); do
+    if [[ "$BENCHMARK_TYPE" == "sharded_queues" ]]; then
+      QUEUES_ARG="queue_${i}"
+    else
+      QUEUES_ARG="queue_0"
+    fi
+
     GOOD_JOB_EXECUTION_MODE=external \
       GOOD_JOB_MAX_THREADS=$THREADS \
       GOOD_JOB_POLL_INTERVAL=0.1 \
-      bundle exec good_job start --queues="queue_0" > /dev/null 2>&1 &
+      bundle exec good_job start --queues="${QUEUES_ARG}" > /dev/null 2>&1 &
+
     WPIDS[$i]=$!
   done
 
@@ -82,7 +98,7 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   # 8. Compute metrics -------------------------------------------------------
   DUR_SEC=$(bundle exec rails runner "puts JobBenchmark.all.pluck(Arel.sql('EXTRACT(EPOCH FROM MAX(finished_at) - MIN(started_at))')).first.to_f")
   THROUGHPUT=$(awk -v j="$JOBS" -v d="$DUR_SEC" 'BEGIN{printf "%.2f", j/d}')
-  ACTUAL_WORKERS_COUNT=$(bundle exec rails runner "puts JobBenchmark.group(:pid).count.to_json")
+  JOBS_WORKERS_DIST=$(bundle exec rails runner "puts JobBenchmark.group(:pid).count.to_json")
 
   # Average CPU-seconds & RSS (MB) from resource log
   read -r AVG_CPU AVG_RSS <<<"$(awk -F, 'NR>1 {cpu+=$3; rss+=$2; n++} END {printf "%.2f %.2f", cpu/n, rss/n/1024}' "$RES_LOG")"
@@ -100,9 +116,10 @@ for WORKERS in "${CONCURRENCY_STEPS[@]}"; do
   # | **Cold-start**   | `date` before boot vs. first `started_at` (`run_benchmark.sh`)          |
 
   # 9. Persist results -------------------------------------------------------
-  printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
-     "$WORKERS" "$THROUGHPUT" "$COLD_MS" "$AVG_CPU" "$AVG_RSS" "$P50" "$P90" "$P99" "$DUR_SEC" "$ACTUAL_WORKERS_COUNT"  \
-     >> "$RESULTS_CSV"
+  bundle exec ruby -rcsv -e 'puts CSV.generate_line(ARGV)' -- \
+  "$THREADS" "$THROUGHPUT" "$COLD_MS" "$AVG_CPU" "$AVG_RSS" \
+  "$P50" "$P90" "$P99" "$DUR_SEC" "$JOBS_WORKERS_DIST" \
+  >> "$RESULTS_CSV"
 done
 
 echo "✅ Benchmark finished → $RESULTS_CSV"

@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# CLEAR GOODJOB DATA
+bundle exec rails runner "GoodJob::Job.delete_all"
+
+JOBS=10000
+RUNNER="good_job"
+CONCURRENCY_STEPS=(1 2 4 8)
+
+BENCHMARK_TYPE="sharded_queues"
+
+for ((i=0;i<20;i++)); do ./bin/benchmark_cpu $JOBS $RUNNER $BENCHMARK_TYPE "${CONCURRENCY_STEPS[@]}"; done
+bin/calculate_cpu_medians $RUNNER $BENCHMARK_TYPE
+
+for ((i=0;i<20;i++)); do ./bin/benchmark_io $JOBS $RUNNER $BENCHMARK_TYPE "${CONCURRENCY_STEPS[@]}"; done
+bin/calculate_io_medians $RUNNER $BENCHMARK_TYPE
+
+BENCHMARK_TYPE="single_queue"
+
+for ((i=0;i<20;i++)); do ./bin/benchmark_cpu $JOBS $RUNNER $BENCHMARK_TYPE "${CONCURRENCY_STEPS[@]}"; done
+bin/calculate_cpu_medians $RUNNER $BENCHMARK_TYPE
+
+for ((i=0;i<20;i++)); do ./bin/benchmark_io $JOBS $RUNNER $BENCHMARK_TYPE "${CONCURRENCY_STEPS[@]}"; done
+bin/calculate_io_medians $RUNNER $BENCHMARK_TYPE

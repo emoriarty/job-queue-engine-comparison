@@ -3,7 +3,8 @@
 require 'csv'
 require 'time'
 
-TOOL = "good_job".freeze
+TOOL = ARGV[0].freeze
+BENCHMARK_TYPE = ARGV[1].freeze
 JOB_TYPE = "io".freeze
 COLUMNS = %w[
   throughput_jps
@@ -24,7 +25,7 @@ def median(array)
 end
 
 # 1. Collect all CSV files matching io_results_*
-csv_files = Dir.glob("#{JOB_TYPE}_results_#{TOOL}_*.csv")
+csv_files = Dir.glob("#{JOB_TYPE}_#{BENCHMARK_TYPE}_results_#{TOOL}_*.csv")
 if csv_files.empty?
   puts "No CSV files found matching io_results_*"
   exit
@@ -45,7 +46,6 @@ csv_files.each do |file|
       value = Float(row[col]) rescue nil
       aggregated[key][col] << value if value
     end
-    puts aggregated
   end
 end
 
@@ -57,7 +57,7 @@ end
 
 # 4. Output CSV
 timestamp = Time.now.strftime("%Y%m%d_%H%M%S")
-output_file = "#{JOB_TYPE}_median_#{TOOL}_#{timestamp}.csv"
+output_file = "#{JOB_TYPE}_#{BENCHMARK_TYPE}_median_#{TOOL}_#{timestamp}.csv"
 
 CSV.open(output_file, 'w') do |csv|
   csv << [key_column, *COLUMNS]

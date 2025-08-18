@@ -4,13 +4,13 @@ JOBS=10000
 RUNNER="delayed_job"
 CONCURRENCY_STEPS=(1 2 4 8)
 
-for ((i=0;i<1;i++)); do
+for ((i=0;i<30;i++)); do
   bin/rails runner "Delayed::Job.delete_all"
   ./bin/perform_benchmark $JOBS $RUNNER "sharded_queues" "${CONCURRENCY_STEPS[@]}";
 done
 bin/calculate_medians $RUNNER "sharded_queues" "cpu"
 
-for ((i=0;i<1;i++)); do
+for ((i=0;i<30;i++)); do
   bin/rails runner "Delayed::Job.delete_all"
   ./bin/perform_benchmark $JOBS $RUNNER "single_queue" "${CONCURRENCY_STEPS[@]}";
 done

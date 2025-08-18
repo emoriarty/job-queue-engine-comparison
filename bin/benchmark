@@ -7,18 +7,14 @@ JOBS=10000
 RUNNER="good_job"
 CONCURRENCY_STEPS=(1 2 4 8)
 
-BENCHMARK_TYPE="sharded_queues"
+for ((i=0;i<30;i++)); do ./bin/benchmark_cpu $JOBS $RUNNER "sharded_queues" "${CONCURRENCY_STEPS[@]}"; done
+bin/calculate_medians_with_gini_coefficient $RUNNER $BENCHMARK_TYPE "cpu"
 
-for ((i=0;i<20;i++)); do ./bin/benchmark_cpu $JOBS $RUNNER $BENCHMARK_TYPE "${CONCURRENCY_STEPS[@]}"; done
-bin/calculate_cpu_medians $RUNNER $BENCHMARK_TYPE
+for ((i=0;i<30;i++)); do ./bin/benchmark_io $JOBS $RUNNER "sharded_queues" "${CONCURRENCY_STEPS[@]}"; done
+bin/calculate_medians_with_gini_coefficient $RUNNER $BENCHMARK_TYPE "io"
 
-for ((i=0;i<20;i++)); do ./bin/benchmark_io $JOBS $RUNNER $BENCHMARK_TYPE "${CONCURRENCY_STEPS[@]}"; done
-bin/calculate_io_medians $RUNNER $BENCHMARK_TYPE
+for ((i=0;i<30;i++)); do ./bin/benchmark_cpu $JOBS $RUNNER "single_queue" "${CONCURRENCY_STEPS[@]}"; done
+bin/calculate_medians_with_gini_coefficient $RUNNER $BENCHMARK_TYPE "cpu"
 
-BENCHMARK_TYPE="single_queue"
-
-for ((i=0;i<20;i++)); do ./bin/benchmark_cpu $JOBS $RUNNER $BENCHMARK_TYPE "${CONCURRENCY_STEPS[@]}"; done
-bin/calculate_cpu_medians $RUNNER $BENCHMARK_TYPE
-
-for ((i=0;i<20;i++)); do ./bin/benchmark_io $JOBS $RUNNER $BENCHMARK_TYPE "${CONCURRENCY_STEPS[@]}"; done
-bin/calculate_io_medians $RUNNER $BENCHMARK_TYPE
+for ((i=0;i<30;i++)); do ./bin/benchmark_io $JOBS $RUNNER "single_queue" "${CONCURRENCY_STEPS[@]}"; done
+bin/calculate_medians_with_gini_coefficient $RUNNER $BENCHMARK_TYPE "io"

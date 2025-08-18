@@ -5,9 +5,18 @@ function enqueue_jobs() {
   local job_type="${1^}"  # capitalize first letter
   local queue_count="$2"
   local total_jobs="$3"
-  local job_count_per_queue=$((total_jobs / queue_count))
+  local job_count_per_queue=$(awk "BEGIN {print $total_jobs/$queue_count}")
+
   local class_name="${job_type}Job"
   local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+  if [[ $job_count_per_queue =~ ^-?[0-9]*\.[0-9]+$ ]]; then
+    # Delete the decimal part and add one
+    # This way when checking the current count will be greater than the total count
+    # allowing to break the loop
+    job_count_per_queue=${job_count_per_queue%.*}
+    ((job_count_per_queue++))
+  fi
 
   (
   tput civis
@@ -15,13 +24,11 @@ function enqueue_jobs() {
   local spinner='|/-\\'
   bin/rails runner "$(cat <<RUBY
     queue_count = $queue_count
-    job_count = $job_count_per_queue
+    job_count = ${job_count_per_queue%.*}
     klass = Object.const_get("$class_name")
     queue_count.times do |i|
       job_count.times do
-        job_id = SecureRandom.uuid
-        JobBenchmark.create!(job_id:, queued_at: Time.now, job_type: "${job_type,,}")
-        klass.set(queue: "queue_#{i}").perform_later(job_id)
+        klass.set(queue: "queue_#{i}").perform_later(Time.now)
       end
     end
 RUBY
@@ -29,12 +36,12 @@ RUBY
   ENQUEUE_PID=$!
   while kill -0 "$ENQUEUE_PID" 2>/dev/null; do
     i=$(( (i+1) % 4 ))
-    printf "\rEnqueuing jobs... %s" "${spinner:$i:1}"
+    printf "\rEnqueuing jobs... %s                            " "${spinner:$i:1}"
     sleep 0.1
   done
   wait "$ENQUEUE_PID"
   tput cnorm
-  printf "\rEnqueuing completed.                            "
+  printf "\rEnqueuing completed.                              "
 )
 }
 

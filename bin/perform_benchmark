@@ -4,7 +4,7 @@
 #   ./perform_cpu_benchmarks.sh \
 #     cpu|io \
 #     10000 \
-#     solid_queue \
+#     que \
 #     sharded|single \
 #     (1 2 4 8)
 #

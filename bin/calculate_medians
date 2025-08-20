@@ -4,7 +4,7 @@
 # Usage
 # ./calculate_medians \
 #   good_job|que|solid_queue|delayed_job|queue_classic|sidekiq \
-#   single_queue|sharded_queues \
+#   single|sharded \
 #   cpu|io
 
 require 'csv'

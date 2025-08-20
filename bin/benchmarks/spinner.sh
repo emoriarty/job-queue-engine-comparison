@@ -1,4 +1,4 @@
-function show_spinner_until_jobs_complete() {
+function display_progress_until_jobs_complete() {
   local spinner='|/-\'
   local delay=0.1
   local i=0
@@ -15,10 +15,9 @@ function show_spinner_until_jobs_complete() {
 
     local pending=$(( jobs_count - count ))
     i=$(( (i+1) % 4 ))
-    printf "\rWaiting for jobs to finish... %s (Pending jobs: %d)         " "${spinner:$i:1}" "$pending"
+    printf "\rWaiting for jobs to finish... %s (Pending jobs: %s)       " "${spinner:$i:1}" "$pending"
     sleep "$delay"
   done
-  printf "\rAll jobs completed.                                                  \n"
   tput cnorm  # Show cursor
 }
 

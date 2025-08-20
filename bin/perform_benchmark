@@ -1,0 +1,139 @@
+#!/bin/bash
+#
+# Example:
+#   ./perform_cpu_benchmarks.sh \
+#     cpu|io \
+#     10000 \
+#     solid_queue \
+#     sharded|single \
+#     (1 2 4 8)
+#
+set -euo pipefail
+
+JOB_TYPE=$1
+shift
+JOBS=$1
+shift
+RUNNER=$1
+shift
+BENCHMARK_TYPE=$1
+shift
+CONCURRENCY_STEPS=("$@")
+
+# Use the script's directory to source the other scripts
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+. "$SCRIPT_DIR/benchmarks/reset.sh"
+. "$SCRIPT_DIR/benchmarks/spinner.sh"
+. "$SCRIPT_DIR/benchmarks/enqueuer.sh"
+. "$SCRIPT_DIR/benchmarks/child_workers_finder.sh"
+
+RESULTS_CSV="${JOB_TYPE}_${BENCHMARK_TYPE}_results_${RUNNER}_$(date +%Y%m%d_%H%M%S).csv"
+if [[ "$JOB_TYPE" == "cpu" ]]; then
+  echo "processes,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
+else
+  echo "threads,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
+fi
+
+echo "**********************************"
+echo " BENCHMARK TYPE: ${BENCHMARK_TYPE^^}"
+echo " RUNNER:         $RUNNER"
+echo " JOB TYPE:       $JOB_TYPE"
+echo " ACTUAL LOAD:    $JOBS jobs"
+echo "**********************************"
+
+for CONCURRENCY in "${CONCURRENCY_STEPS[@]}"; do
+  if [[ "$JOB_TYPE" == "cpu" ]]; then
+    WORKERS=$CONCURRENCY
+    THREADS=8
+  else
+    WORKERS=8
+    THREADS=$CONCURRENCY
+  fi
+
+
+  echo
+  echo " $WORKERS WORKER(S) x $THREADS THREADS"
+  echo "========================================"
+
+  reset_batch
+
+  BATCH_ID=$(uuidgen)
+
+  if [[ "$BENCHMARK_TYPE" == "sharded" ]]; then
+    QUEUES=$WORKERS
+    CONFIG_FILE="config/sharded_queue_${WORKERS}.yml"
+  else
+    QUEUES=1
+    CONFIG_FILE="config/single_queue.yml"
+  fi
+
+  # 1. Launch workers --------------------------------------------------------
+  QUEUE_WORKERS=$WORKERS QUEUE_THREADS=$THREADS ./bin/jobs \
+    --config-file="$CONFIG_FILE" \
+    > /dev/null 2>&1 &
+  PARENT_PID=$!
+  read -a WPIDS <<< "$(find_worker_pids_by_parent "$PARENT_PID")"
+
+  echo "WPIDS: ${WPIDS[@]}"
+
+  # 2. Warming up ------------------------------------------------------------
+  WORKER_BOOT_MS=$(date +%s%3N)
+
+  printf "\rWarming up workers...                                                  "
+  WARMUP_JOBS=$((JOBS / 20)) # ~5% of total jobs
+  enqueue_jobs "$JOB_TYPE" "$QUEUES" "$WARMUP_JOBS"
+  display_progress_until_jobs_complete "$WARMUP_JOBS"
+  printf "\rWarmup complete. Starting real benchmark...                            "
+
+  # 3. Capture cold start metric ---------------------------------------------
+  FIRST_START_MS=$(bundle exec rails runner "puts (JobBenchmark.all.minimum(Arel.sql('EXTRACT(EPOCH FROM started_at)')) * 1000).to_i")
+  COLD_MS=$(( FIRST_START_MS - WORKER_BOOT_MS ))
+
+  # 4. Start resource monitor ------------------------------------------------
+  RES_LOG="/tmp/resources_${BATCH_ID}.csv"
+  "$SCRIPT_DIR/benchmarks/monitor_resources.sh" "$RES_LOG" "${WPIDS[@]}" &
+  MONITOR_PID=$!
+
+  # 5. Enqueue jobs ----------------------------------------------------------
+  reset_batch
+  enqueue_jobs "$JOB_TYPE" "$QUEUES" "$JOBS"
+
+  # 6. Wait until queues are empty -------------------------------------------
+  display_progress_until_jobs_complete "$JOBS"
+  printf "\rAll jobs completed.                                                  \n"
+
+  # 7. Stop monitor & workers -----------------------------------------------
+  kill "$MONITOR_PID" 2>/dev/null || true
+  wait "$MONITOR_PID" 2>/dev/null || true
+  kill "${PARENT_PID}" 2>/dev/null || true
+  wait "${PARENT_PID}" 2>/dev/null || true
+
+  # 8. Compute metrics -------------------------------------------------------
+  DUR_SEC=$(bundle exec rails runner "puts JobBenchmark.all.pluck(Arel.sql('EXTRACT(EPOCH FROM MAX(finished_at) - MIN(started_at))')).first.to_f")
+  THROUGHPUT=$(awk -v j="$JOBS" -v d="$DUR_SEC" 'BEGIN{printf "%.2f", j/d}')
+  JOBS_WORKERS_DIST=$(bundle exec rails runner "puts JobBenchmark.group(:pid).count.to_json")
+
+  # Average CPU-seconds & RSS (MB) from resource log
+  read -r AVG_CPU AVG_RSS <<<"$(awk -F, 'NR>1 {cpu+=$3; rss+=$2; n++} END {printf "%.2f %.2f", cpu/n, rss/n/1024}' "$RES_LOG")"
+
+  # Latency percentiles
+  read -r P50 P90 P99 <<<"$("$SCRIPT_DIR/benchmarks/latency_report.sh")"
+
+  # How to read CSV output
+  # ======================
+  # | Metric           | Where captured                                                          |
+  # | ---------------- | ----------------------------------------------------------------------- |
+  # | **Throughput**   | JobBenchmark min(start) → max(finish) & jobs count (`run_benchmark.sh`) |
+  # | **Latency**      | `queued_at → started_at` percentiles (`latency_report.sh`)              |
+  # | **CPU / Memory** | Per-second samples summed/averaged in `monitor_resources.sh`            |
+  # | **Cold-start**   | `date` before boot vs. first `started_at` (`run_benchmark.sh`)          |
+
+  # 9. Persist results -------------------------------------------------------
+  bundle exec ruby -rcsv -e 'puts CSV.generate_line(ARGV)' -- \
+  "$CONCURRENCY" "$THROUGHPUT" "$COLD_MS" "$AVG_CPU" "$AVG_RSS" \
+  "$P50" "$P90" "$P99" "$DUR_SEC" "$JOBS_WORKERS_DIST" \
+  >> "$RESULTS_CSV"
+done
+
+echo "✅ Benchmark finished → $RESULTS_CSV"

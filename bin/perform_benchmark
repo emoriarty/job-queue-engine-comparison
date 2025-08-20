@@ -26,7 +26,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/benchmarks/reset.sh"
 . "$SCRIPT_DIR/benchmarks/spinner.sh"
 . "$SCRIPT_DIR/benchmarks/enqueuer.sh"
-. "$SCRIPT_DIR/benchmarks/child_workers_finder.sh"
 
 RESULTS_CSV="${JOB_TYPE}_${BENCHMARK_TYPE}_results_${RUNNER}_$(date +%Y%m%d_%H%M%S).csv"
 if [[ "$JOB_TYPE" == "cpu" ]]; then

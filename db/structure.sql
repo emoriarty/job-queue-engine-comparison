@@ -372,7 +372,10 @@ CREATE TABLE public.job_benchmarks (
     finished_at timestamp(6) without time zone,
     engine_type character varying,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    queued_at timestamp(6) without time zone,
+    job_id uuid,
+    pid integer
 );
 
 
@@ -717,6 +720,9 @@ CREATE TRIGGER que_state_notify AFTER INSERT OR DELETE OR UPDATE ON public.que_j
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20250820141508'),
+('20250728134139'),
+('20250728133021'),
 ('20250721084319'),
 ('20240409080916'),
 ('20240409080850'),

@@ -82,8 +82,6 @@ for CONCURRENCY in "${CONCURRENCY_STEPS[@]}"; do
     WPIDS[$i]=$!
   done
 
-  echo "WPIDS: ${WPIDS[@]}"
-
   # 2. Warming up ------------------------------------------------------------
   WORKER_BOOT_MS=$(date +%s%3N)
 

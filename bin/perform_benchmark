@@ -50,7 +50,6 @@ for CONCURRENCY in "${CONCURRENCY_STEPS[@]}"; do
     THREADS=$CONCURRENCY
   fi
 
-
   echo
   echo " $WORKERS WORKER(S) x $THREADS THREADS"
   echo "========================================"
@@ -66,7 +65,7 @@ for CONCURRENCY in "${CONCURRENCY_STEPS[@]}"; do
   fi
 
   # 1. Launch workers --------------------------------------------------------
-  for ((i=1;i<=WORKERS;i++)); do
+  for ((i=0;i<WORKERS;i++)); do
     if [[ "$BENCHMARK_TYPE" == "sharded" ]]; then
       QUEUE_NAME="queue_${i}"
     else
@@ -111,8 +110,8 @@ for CONCURRENCY in "${CONCURRENCY_STEPS[@]}"; do
   # 7. Stop monitor & workers -----------------------------------------------
   kill "$MONITOR_PID" 2>/dev/null || true
   wait "$MONITOR_PID" 2>/dev/null || true
-  kill "${PARENT_PID}" 2>/dev/null || true
-  wait "${PARENT_PID}" 2>/dev/null || true
+  kill "${WPIDS[@]}" 2>/dev/null || true
+  wait "${WPIDS[@]}" 2>/dev/null || true
 
   # 8. Compute metrics -------------------------------------------------------
   DUR_SEC=$(bundle exec rails runner "puts JobBenchmark.all.pluck(Arel.sql('EXTRACT(EPOCH FROM MAX(finished_at) - MIN(started_at))')).first.to_f")

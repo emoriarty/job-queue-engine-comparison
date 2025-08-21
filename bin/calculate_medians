@@ -1,0 +1,112 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Usage
+# ./calculate_medians \
+#   good_job|que|solid_queue|delayed_job|queue_classic|sidekiq \
+#   single|sharded \
+#   cpu|io
+
+require 'csv'
+require 'time'
+require 'json'
+
+TOOL           = ARGV[0].to_s.freeze
+BENCHMARK_TYPE = ARGV[1].to_s.freeze
+JOB_TYPE       = ARGV[2].to_s.freeze
+
+COLUMNS = %w[
+  throughput_jps
+  cold_start_ms
+  avg_cpu_s
+  avg_rss_mb
+  p50_lat_ms
+  p90_lat_ms
+  p99_lat_ms
+  duration_s
+].freeze
+
+def median(array)
+  sorted = array.compact.sort
+  len = sorted.length
+  return nil if len.zero?
+  len.odd? ? sorted[len / 2] : (sorted[len / 2 - 1] + sorted[len / 2]) / 2.0
+end
+
+def gini(values)
+  return 0.0 if values.nil? || values.empty?
+  sum = values.sum.to_f
+  return 0.0 if sum.zero?
+  s = values.sort
+  n = s.size
+  accum = 0.0
+  s.each_with_index { |x, i| accum += (i + 1) * x }
+  ((2.0 * accum) / (n * sum)) - ((n + 1).to_f / n)
+end
+
+def parse_distribution(str)
+  return {} if str.nil? || str.strip.empty?
+  JSON.parse(str)
+rescue JSON::ParserError
+  {}
+end
+
+# 1) Collect all CSV files
+pattern = "#{JOB_TYPE}_#{BENCHMARK_TYPE}_results_#{TOOL}_*.csv"
+csv_files = Dir.glob(pattern)
+if csv_files.empty?
+  puts "No CSV files found matching #{pattern}"
+  exit
+end
+
+# 2) Aggregate per key (first column, e.g., processes/threads)
+aggregated = Hash.new { |h, k| h[k] = Hash.new { |hh, kk| hh[kk] = [] } }
+headers = nil
+key_column = nil
+saw_fairness = false
+
+csv_files.each do |file|
+  CSV.foreach(file, headers: true) do |row|
+    headers     ||= row.headers
+    key_column  ||= headers.first
+    key = row[key_column]
+
+    # Existing numeric columns
+    COLUMNS.each do |col|
+      val = Float(row[col]) rescue nil
+      aggregated[key][col] << val if val
+    end
+
+    # Fairness from JSON distribution
+    dist   = parse_distribution(row['job_per_worker_distribution'])
+    counts = dist.values.map(&:to_i)
+    total  = counts.sum
+    next if counts.empty? || total.zero?
+
+    top1_share_pct = 100.0 * counts.max / total
+    aggregated[key]['__gini__'] << gini(counts)
+    aggregated[key]['__top1__'] << top1_share_pct
+    saw_fairness = true
+  end
+end
+
+# 3) Compute medians per key
+output_columns = [key_column, *COLUMNS, 'gini_median', 'median_top1_share_pct']
+median_rows = aggregated.keys.sort_by { |k| k.to_i rescue k }.map do |key|
+  medians = COLUMNS.map { |col| median(aggregated[key][col]) }
+  gini_med = saw_fairness ? median(aggregated[key]['__gini__'])&.round(4) : nil
+  top1_med = saw_fairness ? median(aggregated[key]['__top1__'])&.round(2) : nil
+  [key, *medians, gini_med, top1_med]
+end
+
+# 4) Output CSV
+timestamp = Time.now.strftime("%Y%m%d_%H%M%S")
+output_file = "#{JOB_TYPE}_#{BENCHMARK_TYPE}_median_#{TOOL}_#{timestamp}.csv"
+
+CSV.open(output_file, 'w') do |csv|
+  csv << output_columns
+  median_rows.each { |row| csv << row }
+end
+
+puts "✅ Median CSV written to #{output_file}"
+

@@ -1,3 +1,5 @@
+set -euo pipefail
+
 function reset_batch() {
   local spinner='|/-\\'
   local delay=0.1

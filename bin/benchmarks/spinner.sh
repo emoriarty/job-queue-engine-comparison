@@ -15,7 +15,7 @@ function display_progress_until_jobs_complete() {
 
     local pending=$(( jobs_count - count ))
     i=$(( (i+1) % 4 ))
-    printf "\rWaiting for jobs to finish... %s (Pending jobs: %d)         " "${spinner:$i:1}" "$pending"
+    printf "\rWaiting for jobs to finish... %s (Pending jobs: %s)       " "${spinner:$i:1}" "$pending"
     sleep "$delay"
   done
   tput cnorm  # Show cursor

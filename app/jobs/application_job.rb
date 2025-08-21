@@ -10,7 +10,13 @@ class ApplicationJob < ActiveJob::Base
     block.call
     finished_at = Time.now
     queued_at = job.arguments.first
-    JobBenchmark.create!(queued_at:, started_at:, finished_at:, duration: finished_at - started_at)
+    JobBenchmark.create!(
+      queued_at:,
+      started_at:,
+      finished_at:,
+      duration: finished_at - started_at,
+      pid: Process.pid
+      )
   end
 
   def job_type

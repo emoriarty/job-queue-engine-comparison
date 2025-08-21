@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_07_28_134139) do
+ActiveRecord::Schema[7.1].define(version: 2025_08_20_141508) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -31,6 +31,21 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_28_134139) do
     t.datetime "updated_at", null: false
     t.datetime "queued_at"
     t.uuid "job_id"
+    t.integer "pid"
+  end
+
+  create_table "queue_classic_jobs", force: :cascade do |t|
+    t.text "q_name", null: false
+    t.text "method", null: false
+    t.jsonb "args", null: false
+    t.timestamptz "locked_at"
+    t.integer "locked_by"
+    t.timestamptz "created_at", default: -> { "now()" }
+    t.timestamptz "scheduled_at", default: -> { "now()" }
+    t.index ["q_name", "id"], name: "idx_qc_on_name_only_unlocked", where: "(locked_at IS NULL)"
+    t.index ["scheduled_at", "id"], name: "idx_qc_on_scheduled_at_only_unlocked", where: "(locked_at IS NULL)"
+    t.check_constraint "length(method) > 0", name: "queue_classic_jobs_method_check"
+    t.check_constraint "length(q_name) > 0", name: "queue_classic_jobs_q_name_check"
   end
 
 end

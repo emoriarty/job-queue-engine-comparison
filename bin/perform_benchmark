@@ -28,7 +28,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/benchmarks/enqueuer.sh"
 
 RESULTS_CSV="${JOB_TYPE}_${BENCHMARK_TYPE}_results_${RUNNER}_$(date +%Y%m%d_%H%M%S).csv"
-echo "processes,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
+if [[ "$JOB_TYPE" == "cpu" ]]; then
+  echo "processes,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
+else
+  echo "threads,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
+fi
 
 echo "**********************************"
 echo " BENCHMARK TYPE: ${BENCHMARK_TYPE^^}"
@@ -40,12 +44,14 @@ echo "**********************************"
 for CONCURRENCY in "${CONCURRENCY_STEPS[@]}"; do
   if [[ "$JOB_TYPE" == "cpu" ]]; then
     WORKERS=$CONCURRENCY
+    THREADS=1
   else
     WORKERS=8
+    THREADS=$CONCURRENCY
   fi
 
   echo
-  echo " $WORKERS WORKER(S)"
+  echo " $WORKERS WORKER(S) x $THREADS THREADS"
   echo "========================================"
 
   reset_batch

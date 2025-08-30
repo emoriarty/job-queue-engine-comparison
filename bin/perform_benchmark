@@ -24,9 +24,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 RESULTS_CSV="${JOB_TYPE}_${BENCHMARK_TYPE}_results_${RUNNER}_$(date +%Y%m%d_%H%M%S).csv"
 if [[ "$JOB_TYPE" == "cpu" ]]; then
-  echo "processes,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
+  echo "processes,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_queue_wait_ms,p90_queue_wait_ms,p99_queue_wait_ms,p50_run_ms,p90_run_ms,p99_run_ms,p50_e2e_ms,p90_e2e_ms,p99_e2e_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
 else
-  echo "threads,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_lat_ms,p90_lat_ms,p99_lat_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
+  echo "threads,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_queue_wait_ms,p90_queue_wait_ms,p99_queue_wait_ms,p50_run_ms,p90_run_ms,p99_run_ms,p50_e2e_ms,p90_e2e_ms,p99_e2e_ms,duration_s,job_per_worker_distribution" > "$RESULTS_CSV"
 fi
 
 echo "**********************************"
@@ -113,7 +113,7 @@ for CONCURRENCY in "${CONCURRENCY_STEPS[@]}"; do
   read -r AVG_CPU AVG_RSS <<<"$(awk -F, 'NR>1 {cpu+=$3; rss+=$2; n++} END {printf "%.2f %.2f", cpu/n, rss/n/1024}' "$RES_LOG")"
 
   # Latency percentiles
-  read -r P50 P90 P99 <<<"$("$SCRIPT_DIR/benchmarks/latency_report.sh")"
+  read -r P50_QUEUE_WAIT P90_QUEUE_WAIT P99_QUEUE_WAIT P50_RUN P90_RUN P99_RUN P50_E2E P90_E2E P99_E2E <<<"$("$SCRIPT_DIR/benchmarks/latency_report.sh")"
 
   # How to read CSV output
   # ======================
@@ -126,8 +126,11 @@ for CONCURRENCY in "${CONCURRENCY_STEPS[@]}"; do
 
   # 9. Persist results -------------------------------------------------------
   bundle exec ruby -rcsv -e 'puts CSV.generate_line(ARGV)' -- \
-  "$WORKERS" "$THROUGHPUT" "$COLD_MS" "$AVG_CPU" "$AVG_RSS" \
-  "$P50" "$P90" "$P99" "$DUR_SEC" "$JOBS_WORKERS_DIST" \
+  "$CONCURRENCY" "$THROUGHPUT" "$COLD_MS" "$AVG_CPU" "$AVG_RSS" \
+  "$P50_QUEUE_WAIT" "$P90_QUEUE_WAIT" "$P99_QUEUE_WAIT" \
+  "$P50_RUN" "$P90_RUN" "$P99_RUN" \
+  "$P50_E2E" "$P90_E2E" "$P99_E2E" \
+  "$DUR_SEC" "$JOBS_WORKERS_DIST" \
   >> "$RESULTS_CSV"
 done
 

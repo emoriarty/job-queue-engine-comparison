@@ -1,0 +1,2 @@
+threads,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_queue_wait_ms,p90_queue_wait_ms,p99_queue_wait_ms,p50_run_ms,p90_run_ms,p99_run_ms,p50_e2e_ms,p90_e2e_ms,p99_e2e_ms,duration_s,gini_median,median_top1_share_pct
+1,606.77,5826.5,260.865,1137.815,4185.0,5012.0,5187.0,3.0,42.0,54.0,4191.0,5022.0,5193.5,16.480755000000002,0.0017,12.56

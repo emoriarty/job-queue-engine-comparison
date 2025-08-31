@@ -7,23 +7,11 @@ RUNS=30
 
 for ((i=0;i<$RUNS;i++)); do
   bin/rails runner "Delayed::Job.delete_all"
-  ./bin/perform_benchmark $JOBS $RUNNER "sharded" "${CONCURRENCY_STEPS[@]}";
-done
-bin/calculate_medians $RUNNER "sharded" "cpu"
-
-for ((i=0;i<$RUNS;i++)); do
-  bin/rails runner "Delayed::Job.delete_all"
-  ./bin/perform_benchmark $JOBS $RUNNER "single" "${CONCURRENCY_STEPS[@]}";
+  ./bin/perform_benchmark "cpu" $JOBS $RUNNER "single" "${CONCURRENCY_STEPS[@]}";
 done
 bin/calculate_medians $RUNNER "single" "cpu"
 
 CONCURRENCY_STEPS=(1)
-
-for ((i=0;i<$RUNS;i++)); do
-  bin/rails runner "Delayed::Job.delete_all"
- ./bin/perform_benchmark "io" $JOBS $RUNNER "sharded" "${CONCURRENCY_STEPS[@]}";
-done
-bin/calculate_medians $RUNNER "sharded" "io"
 
 for ((i=0;i<$RUNS;i++)); do
   bin/rails runner "Delayed::Job.delete_all"

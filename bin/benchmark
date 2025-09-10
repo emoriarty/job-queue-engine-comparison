@@ -6,16 +6,6 @@ CONCURRENCY_STEPS=(1 2 4 8)
 RUNS=30
 
 for ((i=0;i<$RUNS;i++)); do
-  ./bin/perform_benchmark "cpu" $JOBS $RUNNER "sharded" "${CONCURRENCY_STEPS[@]}";
-done
-bin/calculate_medians $RUNNER "sharded" "cpu"
-
-for ((i=0;i<$RUNS;i++)); do
- ./bin/perform_benchmark "io" $JOBS $RUNNER "sharded" "${CONCURRENCY_STEPS[@]}";
-done
-bin/calculate_medians $RUNNER "sharded" "io"
-
-for ((i=0;i<$RUNS;i++)); do
  ./bin/perform_benchmark "cpu" $JOBS $RUNNER "single" "${CONCURRENCY_STEPS[@]}";
 done
 bin/calculate_medians $RUNNER "single" "cpu"

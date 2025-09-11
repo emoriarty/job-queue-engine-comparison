@@ -1,9 +1,9 @@
 #!/bin/bash
 
-JOBS=10000
+DURATION_SECONDS=60
 RUNNER="queue_classic"
 CONCURRENCY_STEPS=(1 2 4 8)
-RUNS=30
+RUNS=1
 
 for ((i=0;i<$RUNS;i++)); do
  ./bin/perform_benchmark "cpu" $JOBS $RUNNER "single" "${CONCURRENCY_STEPS[@]}";

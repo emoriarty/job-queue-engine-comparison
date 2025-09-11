@@ -6,18 +6,23 @@ class ApplicationJob < ActiveJob::Base
   # discard_on ActiveJob::DeserializationError
 
   around_perform do |job, block|
-    started_at = Time.now
+    started_at  = Time.current
+    t0          = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
     block.call
-    finished_at = Time.now
-    queued_at = job.arguments.first
+
+    t1          = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    finished_at = Time.current
+
     JobBenchmark.create!(
-      queued_at:,
+      queued_at: job.arguments.first,
       started_at:,
       finished_at:,
-      duration: finished_at - started_at,
+      duration: t1 - t0,
       pid: Process.pid
-      )
+    )
   end
+
 
   def job_type
     raise NotImplementedError

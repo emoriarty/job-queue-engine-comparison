@@ -1,15 +1,8 @@
-require "json"
-
 class IoJob < ApplicationJob
-  def perform(_job_id)
-    @lines ||= File.readlines(Rails.root.join("lib", "movie_ids_04_13_2024.json"))
-    data = JSON.parse(@lines.sample)
-    title = data["original_title"]
-    popularity = data["popularity"]
-
-    Film.find_or_create_by(title:) do |film|
-      film.popularity = popularity
-    end
+  def perform(_queued_at)
+    # Simulate I/O-bound work using PostgreSQL sleep
+    # This creates database connection overhead without CPU-intensive operations
+    ActiveRecord::Base.connection.execute("SELECT pg_sleep(0.01)")
   end
 
   def job_type = "io"

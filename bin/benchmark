@@ -1,16 +1,16 @@
 #!/bin/bash
 
-JOBS=10000
+DURATION_SECONDS=60
 RUNNER="que"
 CONCURRENCY_STEPS=(1 2 4 8)
-RUNS=30
+RUNS=1
 
 for ((i=0;i<$RUNS;i++)); do
- ./bin/perform_benchmark "cpu" $JOBS $RUNNER "single" "${CONCURRENCY_STEPS[@]}";
+ ./bin/perform_benchmark "cpu" $DURATION_SECONDS $RUNNER "single" "${CONCURRENCY_STEPS[@]}";
 done
 bin/calculate_medians $RUNNER "single" "cpu"
 
 for ((i=0;i<$RUNS;i++)); do
- ./bin/perform_benchmark "io" $JOBS $RUNNER "single" "${CONCURRENCY_STEPS[@]}";
+ ./bin/perform_benchmark "io" $DURATION_SECONDS $RUNNER "single" "${CONCURRENCY_STEPS[@]}";
 done
 bin/calculate_medians $RUNNER "single" "io"

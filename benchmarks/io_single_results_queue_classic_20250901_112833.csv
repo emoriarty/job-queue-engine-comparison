@@ -1,2 +1,0 @@
-threads,throughput_jps,cold_start_ms,avg_cpu_s,avg_rss_mb,p50_queue_wait_ms,p90_queue_wait_ms,p99_queue_wait_ms,p50_run_ms,p90_run_ms,p99_run_ms,p50_e2e_ms,p90_e2e_ms,p99_e2e_ms,duration_s,job_per_worker_distribution
-1,753.10,843,418.55,1074.07,1881.0,3407.0,3791.0,3.0,5.0,48.0,1885.0,3412.0,3796.0,13.278366,"{""85320"":1180,""85319"":1375,""85326"":1174,""85325"":1378,""85324"":1371,""85323"":1174,""85322"":1173,""85321"":1175}"
